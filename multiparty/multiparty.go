@@ -1,8 +1,10 @@
 package multiparty
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
 	"sort"
 	"strings"
 	//	"reflect"
@@ -731,9 +733,26 @@ type LocalSendType struct {
 	next    LocalType
 }
 
+//TODO move this to a better place
+func getSource(templString string, t LocalType) string {
+	tmpl, err := template.New("localSend").Parse(templString)
+	if err != nil {
+		panic(err)
+	}
+	var buf bytes.Buffer
+	tmpl.Execute(&buf, t)
+	return buf.String()
+
+}
+
 //TODO implement this
 func (t LocalSendType) stub() string {
-	return "TODO LocalSendType stub"
+	s := `
+	labelToSend := panic("TODO")
+	send({{.channel}}, labelToSend)
+	{{.next.stub()}}
+	`
+	return getSource(s, t)
 }
 
 func (t LocalSendType) equals(l LocalType) bool {
@@ -1492,4 +1511,9 @@ func (cp CallProcess) typecheck(envNames SortingNames, envVars SortingVariables,
 	}
 
 	return ans, nil
+}
+
+func main() {
+	t := LocalSendType{}
+	println(t.stub())
 }
