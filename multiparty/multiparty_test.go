@@ -3,6 +3,7 @@ package multiparty
 import (
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"testing"
@@ -137,10 +138,12 @@ func TestASTParse(test *testing.T) {
 
 func TestBasicStub(test *testing.T) {
 	ourSorts := [2]Sort{"int", "int"}
-	t := LocalSendType{channel: "foo", value: ourSorts[:], next: LocalEndType{}}
+	t := ValueType{prefix: Prefix{P1: "foo", P2: "bar", channel: "channel"}, value: ourSorts[:], next: EndType{}}
 	println("*******************\n\n\n ")
-	println(t.stub())
-	//stub := []byte(t.stub())
-	//formatted, _ := format.Source(stub)
-	//println(string(formatted))
+	stub := []byte(program(t))
+	formatted, err := format.Source(stub)
+	if err != nil {
+		panic(err)
+	}
+	println(string(formatted))
 }

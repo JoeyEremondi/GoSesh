@@ -24,6 +24,39 @@ type GlobalType interface {
 
 type Participant string
 
+//Generate the program with all the stubs for a global type
+func program(t GlobalType) string {
+
+	participantCases := ""
+	participantFunctions := ""
+	for _, part := range t.participants() {
+		participantCases += fmt.Sprintf(`
+if argsWithoutProg[1] == "--%s"{
+	%s_main(argsWithoutProg[2:])
+}
+			`, part, part)
+
+		//TODO check error
+		ourProjection, _ := t.project(part)
+		participantFunctions += fmt.Sprintf(`
+func %s_main(args []string){
+	%s
+}
+			`, part, ourProjection.stub())
+	}
+	return fmt.Sprintf(`
+package main
+
+import "os"
+
+func main(){
+	argsWithoutProg := os.Args[1:]
+	%s
+}
+%s
+	`, participantCases, participantFunctions)
+}
+
 func contains(p Participant, slice []Participant) bool {
 	for _, element := range slice {
 		if element == p {
@@ -757,7 +790,7 @@ func (t LocalSendType) stub() string {
 	for i, sort := range t.value {
 		argDefaultStrings += fmt.Sprintf("sendArg_%d := default_%s //TODO put a value here\n", i, sort)
 
-		assignmentStrings += fmt.Sprintf("sendArgs[%d] := serialize_%s(sendArg_%d)\n", i, sort, i)
+		assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
 
 	}
 
@@ -787,7 +820,7 @@ type LocalReceiveType struct {
 func (t LocalReceiveType) stub() string {
 	s := `
 	recieve(%s, labelToSend)
-	recievedValue := "%s"
+	recievedValue := "TODO"
 	%s
 	`
 	return fmt.Sprintf(s, t.channel, t.next.stub())
