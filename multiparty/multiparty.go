@@ -746,15 +746,26 @@ func getSource(templString string, t Interface) string {
 
 }*/
 
-//TODO implement this
+var defaultLabel = "TODO make a better label"
+
 func (t LocalSendType) stub() string {
-	s := `
-	labelToSend := panic("TODO")
-	send(%s, labelToSend)
-	%s
-	`
-	return fmt.Sprintf(s, t.channel, t.next.stub())
-	//return getSource(s, {channel : t.channel, })
+
+	//Generate a variable for each argument, assigning it the default value
+	//Along with an array that contains them all serialized as strings
+	argDefaultStrings := ""
+	assignmentStrings := fmt.Sprintf("var sendArgs [%d]string\n", len(t.value))
+	for i, sort := range t.value {
+		argDefaultStrings += fmt.Sprintf("sendArg_%d := default_%s //TODO put a value here\n", i, sort)
+
+		assignmentStrings += fmt.Sprintf("sendArgs[%d] := serialize_%s(sendArg_%d)\n", i, sort, i)
+
+	}
+
+	return fmt.Sprintf(`
+%s
+send(%s, serialize_string_arr(sendArgs[:]))
+%s
+	`, argDefaultStrings+assignmentStrings, t.channel, t.next.stub())
 }
 
 func (t LocalSendType) equals(l LocalType) bool {
@@ -774,7 +785,12 @@ type LocalReceiveType struct {
 
 //TODO implement this
 func (t LocalReceiveType) stub() string {
-	return "TODO LocalRecieveType stub"
+	s := `
+	recieve(%s, labelToSend)
+	recievedValue := "%s"
+	%s
+	`
+	return fmt.Sprintf(s, t.channel, t.next.stub())
 }
 
 func (t LocalReceiveType) equals(l LocalType) bool {

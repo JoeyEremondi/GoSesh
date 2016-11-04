@@ -136,7 +136,11 @@ func TestASTParse(test *testing.T) {
 }
 
 func TestBasicStub(test *testing.T) {
-	t := LocalSendType{channel: "foo", value: nil, next: LocalEndType{}}
+	ourSorts := [2]Sort{"int", "int"}
+	t := LocalSendType{channel: "foo", value: ourSorts[:], next: LocalEndType{}}
 	println("*******************\n\n\n ")
 	println(t.stub())
+	//stub := []byte(t.stub())
+	//formatted, _ := format.Source(stub)
+	//println(string(formatted))
 }
