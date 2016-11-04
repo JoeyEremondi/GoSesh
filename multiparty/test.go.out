@@ -1,0 +1,163 @@
+
+package main
+
+import "os"
+
+func main(){
+	argsWithoutProg := os.Args[1:]
+	
+if argsWithoutProg[1] == "--foo"{
+	foo_main(argsWithoutProg[2:])
+}
+			
+if argsWithoutProg[1] == "--bar"{
+	bar_main(argsWithoutProg[2:])
+}
+			
+if argsWithoutProg[1] == "--bar"{
+	bar_main(argsWithoutProg[2:])
+}
+			
+if argsWithoutProg[1] == "--foo"{
+	foo_main(argsWithoutProg[2:])
+}
+			
+}
+
+func foo_main(args []string){
+	
+T:
+for {
+	
+sendArg_0 := default_int //TODO put a value here
+sendArg_1 := default_int //TODO put a value here
+var sendArgs [2]string
+sendArgs[0] = serialize_int(sendArg_0)
+sendArgs[1] = serialize_int(sendArg_1)
+
+send(channel, serialize_string_arr(sendArgs[:]))
+
+var ourBuf []byte
+recv(channel2, &ourBuf)
+recievedLabel := deserialize_string(ourBuf)
+switch recievedLabel{
+	
+	case "isGood":
+		return
+
+			
+	case "isBad":
+		continue T
+
+			
+default:
+	panic("Invalid label sent at selection choice")
+}
+		
+	
+}
+		
+}
+			
+func bar_main(args []string){
+	
+T:
+for {
+	
+var recvBuf []byte
+send(channel, recvBuf)
+recvArgs := deserialize_string_array(recvBuf)
+recievedValue_0 := deserialize_int(recvArgs[0])
+recievedValue_1 := deserialize_int(recvArgs[1])
+
+
+var labelToSend = "isGood" //TODO which label to send
+send(channel2, serialize_string(isGood))
+switch labelToSend{
+	
+	case "isGood":
+		return
+
+			
+	case "isBad":
+		continue T
+
+			
+default:
+	panic("Invalid label sent at selection choice")
+}
+		
+	
+}
+		
+}
+			
+func bar_main(args []string){
+	
+T:
+for {
+	
+var recvBuf []byte
+send(channel, recvBuf)
+recvArgs := deserialize_string_array(recvBuf)
+recievedValue_0 := deserialize_int(recvArgs[0])
+recievedValue_1 := deserialize_int(recvArgs[1])
+
+
+var labelToSend = "isBad" //TODO which label to send
+send(channel2, serialize_string(isBad))
+switch labelToSend{
+	
+	case "isBad":
+		continue T
+
+			
+	case "isGood":
+		return
+
+			
+default:
+	panic("Invalid label sent at selection choice")
+}
+		
+	
+}
+		
+}
+			
+func foo_main(args []string){
+	
+T:
+for {
+	
+sendArg_0 := default_int //TODO put a value here
+sendArg_1 := default_int //TODO put a value here
+var sendArgs [2]string
+sendArgs[0] = serialize_int(sendArg_0)
+sendArgs[1] = serialize_int(sendArg_1)
+
+send(channel, serialize_string_arr(sendArgs[:]))
+
+var ourBuf []byte
+recv(channel2, &ourBuf)
+recievedLabel := deserialize_string(ourBuf)
+switch recievedLabel{
+	
+	case "isGood":
+		return
+
+			
+	case "isBad":
+		continue T
+
+			
+default:
+	panic("Invalid label sent at selection choice")
+}
+		
+	
+}
+		
+}
+			
+	

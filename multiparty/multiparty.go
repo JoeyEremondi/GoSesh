@@ -36,8 +36,10 @@ if argsWithoutProg[1] == "--%s"{
 }
 			`, part, part)
 
-		//TODO check error
-		ourProjection, _ := t.project(part)
+		ourProjection, err := t.project(part)
+		if err != nil {
+			panic(err)
+		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
 	%s
@@ -734,7 +736,8 @@ type ProjectionType struct {
 	participant Participant
 }
 
-//TODO is this right? What is a ProjectionType
+//Projection type is just a local type paired with which participant it is
+//We want to treat it like a local type
 func (t ProjectionType) stub() string {
 	return t.T.stub()
 }
@@ -763,23 +766,6 @@ type LocalSendType struct {
 	value   []Sort
 	next    LocalType
 }
-
-//TODO move this to a better place
-//Given the template string and the local type
-//Do the actual string interpolation and return the string
-/*
-func getSource(templString string, t Interface) string {
-	tmpl, err := template.New("localSend").Parse(templString)
-	if err != nil {
-		panic(err)
-	}
-	var buf bytes.Buffer
-	tmpl.Execute(&buf, t)
-	return buf.String()
-
-}*/
-
-var defaultLabel = "TODO make a better label"
 
 func (t LocalSendType) stub() string {
 
@@ -816,7 +802,6 @@ type LocalReceiveType struct {
 	next    LocalType
 }
 
-//TODO implement this
 func (t LocalReceiveType) stub() string {
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
@@ -851,9 +836,42 @@ type LocalSelectionType struct {
 	branches map[string]LocalType
 }
 
-//TODO implement this
+//Used for both selection and branching
+func defaultLabelAndCases(branches map[string]LocalType) (string, string) {
+	//Get a default label
+	//And make a case for each possible branch
+	ourLabel := ""
+	caseStrings := ""
+	for label, branchType := range branches {
+		if ourLabel == "" {
+			ourLabel = label
+		}
+		caseStrings += fmt.Sprintf(`
+	case "%s":
+		%s
+
+			`, label, branchType.stub())
+	}
+	return ourLabel, caseStrings
+}
+
 func (t LocalSelectionType) stub() string {
-	return "TODO LocalSelectionType stub"
+	if len(t.branches) == 0 {
+		panic("Cannot have a Selection with 0 branches")
+	}
+
+	ourLabel, caseStrings := defaultLabelAndCases(t.branches)
+
+	//In our code, set the label value to default, then branch based on the label value
+	return fmt.Sprintf(`
+var labelToSend = "%s" //TODO which label to send
+send(%s, serialize_string(%s))
+switch labelToSend{
+	%s
+default:
+	panic("Invalid label sent at selection choice")
+}
+		`, ourLabel, t.channel, ourLabel, caseStrings)
 }
 
 func (t LocalSelectionType) equals(l LocalType) bool {
@@ -876,9 +894,24 @@ type LocalBranchingType struct {
 	branches map[string]LocalType
 }
 
-//TODO implement this
 func (t LocalBranchingType) stub() string {
-	return "TODO LocalBranchingType stub"
+	if len(t.branches) == 0 {
+		panic("Cannot have a Branching with 0 branches")
+	}
+
+	_, caseStrings := defaultLabelAndCases(t.branches)
+
+	//In our code, set the label value to default, then branch based on the label value
+	return fmt.Sprintf(`
+var ourBuf []byte
+recv(%s, &ourBuf)
+recievedLabel := deserialize_string(ourBuf)
+switch recievedLabel{
+	%s
+default:
+	panic("Invalid label sent at selection choice")
+}
+		`, t.channel, caseStrings)
 }
 
 func (t LocalBranchingType) equals(l LocalType) bool {
