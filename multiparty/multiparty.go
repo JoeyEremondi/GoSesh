@@ -793,7 +793,7 @@ func (t LocalSendType) stub() string {
 		assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
 
 	}
-
+	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 %s
 send(%s, serialize_string_arr(sendArgs[:]))
@@ -818,12 +818,22 @@ type LocalReceiveType struct {
 
 //TODO implement this
 func (t LocalReceiveType) stub() string {
-	s := `
-	recieve(%s, labelToSend)
-	recievedValue := "TODO"
-	%s
-	`
-	return fmt.Sprintf(s, t.channel, t.next.stub())
+	//Generate a variable for each argument, assigning it the default value
+	//Along with an array that contains them all serialized as strings
+	assignmentStrings := ""
+	for i, sort := range t.value {
+
+		assignmentStrings += fmt.Sprintf("recievedValue_%d := deserialize_%s(recvArgs[%d])\n", i, sort, i)
+
+	}
+	//Serialize each argument, then do the send, and whatever comes after
+	return fmt.Sprintf(`
+var recvBuf []byte
+send(%s, recvBuf)
+recvArgs := deserialize_string_array(recvBuf)
+%s
+%s
+	`, t.channel, assignmentStrings, t.next.stub())
 }
 
 func (t LocalReceiveType) equals(l LocalType) bool {
@@ -887,9 +897,10 @@ func (t LocalBranchingType) equals(l LocalType) bool {
 
 type LocalNameType string
 
-//TODO implement this
+//When we see a reference to a type, it was bound by a recursive definition
+//So we jump back to whatever code does the thing recursively
 func (t LocalNameType) stub() string {
-	return "TODO LocalNameType stub"
+	return fmt.Sprintf("continue %s", t)
 }
 
 func (t LocalNameType) equals(l LocalType) bool {
@@ -905,9 +916,16 @@ type LocalRecursiveType struct {
 	body LocalType
 }
 
-//TODO implement this
+//Create a labeled infinite loop
+//Any type we refer to ourselves in this type,
+//we jump back to the top of the loop
 func (t LocalRecursiveType) stub() string {
-	return "TODO LocalRecursiveType stub"
+	return fmt.Sprintf(`
+%s:
+for {
+	%s
+}
+		`, t.bind, t.body.stub())
 }
 
 func (t LocalRecursiveType) equals(l LocalType) bool {
@@ -921,9 +939,8 @@ func (t LocalRecursiveType) equals(l LocalType) bool {
 
 type LocalEndType struct{}
 
-//TODO implement this
 func (t LocalEndType) stub() string {
-	return "//end"
+	return "return"
 }
 
 func (t LocalEndType) equals(l LocalType) bool {

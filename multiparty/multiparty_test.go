@@ -138,7 +138,9 @@ func TestASTParse(test *testing.T) {
 
 func TestBasicStub(test *testing.T) {
 	ourSorts := [2]Sort{"int", "int"}
-	t := ValueType{prefix: Prefix{P1: "foo", P2: "bar", channel: "channel"}, value: ourSorts[:], next: EndType{}}
+	t := RecursiveType{
+		bind: "T",
+		body: ValueType{prefix: Prefix{P1: "foo", P2: "bar", channel: "channel"}, value: ourSorts[:], next: NameType("T")}}
 	println("*******************\n\n\n ")
 	stub := []byte(program(t))
 	formatted, err := format.Source(stub)
