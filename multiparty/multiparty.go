@@ -1,10 +1,8 @@
 package multiparty
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"sort"
 	"strings"
 	//	"reflect"
@@ -734,7 +732,10 @@ type LocalSendType struct {
 }
 
 //TODO move this to a better place
-func getSource(templString string, t LocalType) string {
+//Given the template string and the local type
+//Do the actual string interpolation and return the string
+/*
+func getSource(templString string, t Interface) string {
 	tmpl, err := template.New("localSend").Parse(templString)
 	if err != nil {
 		panic(err)
@@ -743,16 +744,17 @@ func getSource(templString string, t LocalType) string {
 	tmpl.Execute(&buf, t)
 	return buf.String()
 
-}
+}*/
 
 //TODO implement this
 func (t LocalSendType) stub() string {
 	s := `
 	labelToSend := panic("TODO")
-	send({{.channel}}, labelToSend)
-	{{.next.stub()}}
+	send(%s, labelToSend)
+	%s
 	`
-	return getSource(s, t)
+	return fmt.Sprintf(s, t.channel, t.next.stub())
+	//return getSource(s, {channel : t.channel, })
 }
 
 func (t LocalSendType) equals(l LocalType) bool {
@@ -872,7 +874,7 @@ type LocalEndType struct{}
 
 //TODO implement this
 func (t LocalEndType) stub() string {
-	return "TODO LocalEndType stub"
+	return "//end"
 }
 
 func (t LocalEndType) equals(l LocalType) bool {
