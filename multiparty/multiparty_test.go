@@ -3,8 +3,10 @@ package multiparty
 import (
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
+	"os"
 	"testing"
 )
 
@@ -136,7 +138,30 @@ func TestASTParse(test *testing.T) {
 }
 
 func TestBasicStub(test *testing.T) {
-	t := LocalSendType{channel: "foo", value: nil, next: LocalEndType{}}
+	ourSorts := [2]Sort{"int", "int"}
+
+	ourMap := map[string]GlobalType{
+		"isGood": EndType{},
+		"isBad":  NameType("T"),
+	}
+
+	t := RecursiveType{
+		bind: "T",
+		body: ValueType{
+			prefix: Prefix{P1: "foo", P2: "bar", channel: "channel"},
+			value:  ourSorts[:],
+			next:   BranchingType{prefix: Prefix{P1: "bar", P2: "foo", channel: "channel2"}, branches: ourMap},
+		}}
 	println("*******************\n\n\n ")
-	println(t.stub())
+	outFile, err := os.Create("test.go.out")
+	defer outFile.Close()
+
+	outFile.WriteString(program(t))
+
+	stub := []byte(program(t))
+	formatted, err := format.Source(stub)
+	if err != nil {
+		panic(err)
+	}
+	println(string(formatted))
 }

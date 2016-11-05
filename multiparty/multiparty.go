@@ -1,10 +1,8 @@
 package multiparty
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"sort"
 	"strings"
 	//	"reflect"
@@ -25,6 +23,41 @@ type GlobalType interface {
 }
 
 type Participant string
+
+//Generate the program with all the stubs for a global type
+func program(t GlobalType) string {
+
+	participantCases := ""
+	participantFunctions := ""
+	for _, part := range t.participants() {
+		participantCases += fmt.Sprintf(`
+if argsWithoutProg[1] == "--%s"{
+	%s_main(argsWithoutProg[2:])
+}
+			`, part, part)
+
+		ourProjection, err := t.project(part)
+		if err != nil {
+			panic(err)
+		}
+		participantFunctions += fmt.Sprintf(`
+func %s_main(args []string){
+	%s
+}
+			`, part, ourProjection.stub())
+	}
+	return fmt.Sprintf(`
+package main
+
+import "os"
+
+func main(){
+	argsWithoutProg := os.Args[1:]
+	%s
+}
+%s
+	`, participantCases, participantFunctions)
+}
 
 func contains(p Participant, slice []Participant) bool {
 	for _, element := range slice {
@@ -703,7 +736,8 @@ type ProjectionType struct {
 	participant Participant
 }
 
-//TODO is this right? What is a ProjectionType
+//Projection type is just a local type paired with which participant it is
+//We want to treat it like a local type
 func (t ProjectionType) stub() string {
 	return t.T.stub()
 }
@@ -733,26 +767,24 @@ type LocalSendType struct {
 	next    LocalType
 }
 
-//TODO move this to a better place
-func getSource(templString string, t LocalType) string {
-	tmpl, err := template.New("localSend").Parse(templString)
-	if err != nil {
-		panic(err)
-	}
-	var buf bytes.Buffer
-	tmpl.Execute(&buf, t)
-	return buf.String()
-
-}
-
-//TODO implement this
 func (t LocalSendType) stub() string {
-	s := `
-	labelToSend := panic("TODO")
-	send({{.channel}}, labelToSend)
-	{{.next.stub()}}
-	`
-	return getSource(s, t)
+
+	//Generate a variable for each argument, assigning it the default value
+	//Along with an array that contains them all serialized as strings
+	argDefaultStrings := ""
+	assignmentStrings := fmt.Sprintf("var sendArgs [%d]string\n", len(t.value))
+	for i, sort := range t.value {
+		argDefaultStrings += fmt.Sprintf("sendArg_%d := default_%s //TODO put a value here\n", i, sort)
+
+		assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
+
+	}
+	//Serialize each argument, then do the send, and whatever comes after
+	return fmt.Sprintf(`
+%s
+send(%s, serialize_string_arr(sendArgs[:]))
+%s
+	`, argDefaultStrings+assignmentStrings, t.channel, t.next.stub())
 }
 
 func (t LocalSendType) equals(l LocalType) bool {
@@ -770,9 +802,23 @@ type LocalReceiveType struct {
 	next    LocalType
 }
 
-//TODO implement this
 func (t LocalReceiveType) stub() string {
-	return "TODO LocalRecieveType stub"
+	//Generate a variable for each argument, assigning it the default value
+	//Along with an array that contains them all serialized as strings
+	assignmentStrings := ""
+	for i, sort := range t.value {
+
+		assignmentStrings += fmt.Sprintf("recievedValue_%d := deserialize_%s(recvArgs[%d])\n", i, sort, i)
+
+	}
+	//Serialize each argument, then do the send, and whatever comes after
+	return fmt.Sprintf(`
+var recvBuf []byte
+send(%s, recvBuf)
+recvArgs := deserialize_string_array(recvBuf)
+%s
+%s
+	`, t.channel, assignmentStrings, t.next.stub())
 }
 
 func (t LocalReceiveType) equals(l LocalType) bool {
@@ -790,9 +836,42 @@ type LocalSelectionType struct {
 	branches map[string]LocalType
 }
 
-//TODO implement this
+//Used for both selection and branching
+func defaultLabelAndCases(branches map[string]LocalType) (string, string) {
+	//Get a default label
+	//And make a case for each possible branch
+	ourLabel := ""
+	caseStrings := ""
+	for label, branchType := range branches {
+		if ourLabel == "" {
+			ourLabel = label
+		}
+		caseStrings += fmt.Sprintf(`
+	case "%s":
+		%s
+
+			`, label, branchType.stub())
+	}
+	return ourLabel, caseStrings
+}
+
 func (t LocalSelectionType) stub() string {
-	return "TODO LocalSelectionType stub"
+	if len(t.branches) == 0 {
+		panic("Cannot have a Selection with 0 branches")
+	}
+
+	ourLabel, caseStrings := defaultLabelAndCases(t.branches)
+
+	//In our code, set the label value to default, then branch based on the label value
+	return fmt.Sprintf(`
+var labelToSend = "%s" //TODO which label to send
+send(%s, serialize_string(%s))
+switch labelToSend{
+	%s
+default:
+	panic("Invalid label sent at selection choice")
+}
+		`, ourLabel, t.channel, ourLabel, caseStrings)
 }
 
 func (t LocalSelectionType) equals(l LocalType) bool {
@@ -815,9 +894,24 @@ type LocalBranchingType struct {
 	branches map[string]LocalType
 }
 
-//TODO implement this
 func (t LocalBranchingType) stub() string {
-	return "TODO LocalBranchingType stub"
+	if len(t.branches) == 0 {
+		panic("Cannot have a Branching with 0 branches")
+	}
+
+	_, caseStrings := defaultLabelAndCases(t.branches)
+
+	//In our code, set the label value to default, then branch based on the label value
+	return fmt.Sprintf(`
+var ourBuf []byte
+recv(%s, &ourBuf)
+recievedLabel := deserialize_string(ourBuf)
+switch recievedLabel{
+	%s
+default:
+	panic("Invalid label sent at selection choice")
+}
+		`, t.channel, caseStrings)
 }
 
 func (t LocalBranchingType) equals(l LocalType) bool {
@@ -836,9 +930,10 @@ func (t LocalBranchingType) equals(l LocalType) bool {
 
 type LocalNameType string
 
-//TODO implement this
+//When we see a reference to a type, it was bound by a recursive definition
+//So we jump back to whatever code does the thing recursively
 func (t LocalNameType) stub() string {
-	return "TODO LocalNameType stub"
+	return fmt.Sprintf("continue %s", t)
 }
 
 func (t LocalNameType) equals(l LocalType) bool {
@@ -854,9 +949,16 @@ type LocalRecursiveType struct {
 	body LocalType
 }
 
-//TODO implement this
+//Create a labeled infinite loop
+//Any type we refer to ourselves in this type,
+//we jump back to the top of the loop
 func (t LocalRecursiveType) stub() string {
-	return "TODO LocalRecursiveType stub"
+	return fmt.Sprintf(`
+%s:
+for {
+	%s
+}
+		`, t.bind, t.body.stub())
 }
 
 func (t LocalRecursiveType) equals(l LocalType) bool {
@@ -870,9 +972,8 @@ func (t LocalRecursiveType) equals(l LocalType) bool {
 
 type LocalEndType struct{}
 
-//TODO implement this
 func (t LocalEndType) stub() string {
-	return "TODO LocalEndType stub"
+	return "return"
 }
 
 func (t LocalEndType) equals(l LocalType) bool {
