@@ -728,12 +728,19 @@ func unfold(gt GlobalType, env map[NameType]GlobalType) GlobalType {
 type LocalType interface {
 	equals(t LocalType) bool
 	stub() string
+	substitute(u LocalNameType, t LocalType) LocalType
 }
 
 type ProjectionType struct {
 	// Originall, Type @ participant
 	T           LocalType
 	participant Participant
+}
+
+func (t ProjectionType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	ret := t
+	ret.T = t.T.substitute(u, tsub)
+	return ret
 }
 
 //Projection type is just a local type paired with which participant it is
@@ -765,6 +772,12 @@ type LocalSendType struct {
 	channel Channel
 	value   []Sort
 	next    LocalType
+}
+
+func (t LocalSendType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	ret := t
+	ret.next = t.next.substitute(u, tsub)
+	return ret
 }
 
 func (t LocalSendType) stub() string {
@@ -802,6 +815,12 @@ type LocalReceiveType struct {
 	next    LocalType
 }
 
+func (t LocalReceiveType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	ret := t
+	ret.next = t.next.substitute(u, tsub)
+	return ret
+}
+
 func (t LocalReceiveType) stub() string {
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
@@ -834,6 +853,14 @@ type LocalSelectionType struct {
 	// k \oplus
 	channel  Channel
 	branches map[string]LocalType
+}
+
+func (t LocalSelectionType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	ret := t
+	for k, branchType := range t.branches {
+		ret.branches[k] = branchType.substitute(u, tsub)
+	}
+	return ret
 }
 
 //Used for both selection and branching
@@ -894,6 +921,14 @@ type LocalBranchingType struct {
 	branches map[string]LocalType
 }
 
+func (t LocalBranchingType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	ret := t
+	for k, branchType := range t.branches {
+		ret.branches[k] = branchType.substitute(u, tsub)
+	}
+	return ret
+}
+
 func (t LocalBranchingType) stub() string {
 	if len(t.branches) == 0 {
 		panic("Cannot have a Branching with 0 branches")
@@ -930,6 +965,14 @@ func (t LocalBranchingType) equals(l LocalType) bool {
 
 type LocalNameType string
 
+func (t LocalNameType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	if u == t {
+		return tsub
+	} else {
+		return u
+	}
+}
+
 //When we see a reference to a type, it was bound by a recursive definition
 //So we jump back to whatever code does the thing recursively
 func (t LocalNameType) stub() string {
@@ -947,6 +990,17 @@ func (t LocalNameType) equals(l LocalType) bool {
 type LocalRecursiveType struct {
 	bind LocalNameType
 	body LocalType
+}
+
+func (t LocalRecursiveType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	//Don't substitute if we're shadowing
+	if u == t.bind {
+		return u
+	} else {
+		ret := t
+		ret.body = t.body.substitute(u, tsub)
+		return ret
+	}
 }
 
 //Create a labeled infinite loop
@@ -971,6 +1025,10 @@ func (t LocalRecursiveType) equals(l LocalType) bool {
 }
 
 type LocalEndType struct{}
+
+func (t LocalEndType) substitute(u LocalNameType, tsub LocalType) LocalType {
+	return t
+}
 
 func (t LocalEndType) stub() string {
 	return "return"
