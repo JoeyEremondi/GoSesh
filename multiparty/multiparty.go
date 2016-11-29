@@ -52,7 +52,7 @@ package main
 import (
 	"os"
 	"github.com/arcaneiceman/GoVector/govec"
-	"github.com/arcaneiceman/GoVector/govec/capture"
+	"github.com/arcaneiceman/GoVector/capture"
 )
 
 func main(){
@@ -791,7 +791,7 @@ func (t LocalSendType) Stub() string {
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
 	argDefaultString := fmt.Sprintf("sendArg := default_%s //TODO put a value here\n", t.Value)
-	assignmentStrings := fmt.Sprintf("sendBuf := govec.PreparseSend(\"TODO govec send message\", sendArg)sendArgs [%d]string\n", len(t.Value))
+	assignmentStrings := "sendBuf := govec.PreparseSend(\"TODO govec send message\", sendArg)"
 
 	//assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
 
@@ -891,13 +891,14 @@ func (t LocalSelectionType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var labelToSend = "%s" //TODO which label to send
-send(%s, serialize_string(%s))
+buf := govec.PrepareSend("TODO Select message", labelToSend)
+capture.Write(channels[%s].Write, buf)
 switch labelToSend{
 	%s
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, ourLabel, t.Channel, ourLabel, caseStrings)
+		`, ourLabel, t.Channel, caseStrings)
 }
 
 func (t LocalSelectionType) Equals(l LocalType) bool {
@@ -938,9 +939,10 @@ func (t LocalBranchingType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var ourBuf []byte
-recv(%s, &ourBuf)
-recievedLabel := deserialize_string(ourBuf)
-switch recievedLabel{
+govector.Read(channels[%s].Read, &ourBuf)
+var receivedLabel string
+capture.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+switch receivedLabel{
 	%s
 default:
 	panic("Invalid label sent at selection choice")

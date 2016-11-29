@@ -1,7 +1,11 @@
 
 package main
 
-import "os"
+import (
+	"os"
+	"github.com/arcaneiceman/GoVector/govec"
+	"github.com/arcaneiceman/GoVector/capture"
+)
 
 func main(){
 	argsWithoutProg := os.Args[1:]
@@ -29,18 +33,15 @@ func foo_main(args []string){
 T:
 for {
 	
-sendArg_0 := default_int //TODO put a value here
-sendArg_1 := default_int //TODO put a value here
-var sendArgs [2]string
-sendArgs[0] = serialize_int(sendArg_0)
-sendArgs[1] = serialize_int(sendArg_1)
-
-send(channel, serialize_string_arr(sendArgs[:]))
+sendArg := default_int //TODO put a value here
+sendBuf := govec.PreparseSend("TODO govec send message", sendArg)
+capture.Write(channels[channel].Write, sendBuf)
 
 var ourBuf []byte
-recv(channel2, &ourBuf)
-recievedLabel := deserialize_string(ourBuf)
-switch recievedLabel{
+govector.Read(channels[channel2].Read, &ourBuf)
+var receivedLabel string
+capture.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+switch receivedLabel{
 	
 	case "isGood":
 		return
@@ -65,14 +66,13 @@ T:
 for {
 	
 var recvBuf []byte
-send(channel, recvBuf)
-recvArgs := deserialize_string_array(recvBuf)
-recievedValue_0 := deserialize_int(recvArgs[0])
-recievedValue_1 := deserialize_int(recvArgs[1])
-
+capture.Read(channels[channel].Read, recvBuf)
+var receivedValue int
+govector.UnpackRecieve("TODO unpack message", recvBuf, &receivedValue)
 
 var labelToSend = "isGood" //TODO which label to send
-send(channel2, serialize_string(isGood))
+buf := govec.PrepareSend("TODO Select message", labelToSend)
+capture.Write(channels[channel2].Write, buf)
 switch labelToSend{
 	
 	case "isGood":
@@ -98,22 +98,21 @@ T:
 for {
 	
 var recvBuf []byte
-send(channel, recvBuf)
-recvArgs := deserialize_string_array(recvBuf)
-recievedValue_0 := deserialize_int(recvArgs[0])
-recievedValue_1 := deserialize_int(recvArgs[1])
+capture.Read(channels[channel].Read, recvBuf)
+var receivedValue int
+govector.UnpackRecieve("TODO unpack message", recvBuf, &receivedValue)
 
-
-var labelToSend = "isBad" //TODO which label to send
-send(channel2, serialize_string(isBad))
+var labelToSend = "isGood" //TODO which label to send
+buf := govec.PrepareSend("TODO Select message", labelToSend)
+capture.Write(channels[channel2].Write, buf)
 switch labelToSend{
 	
-	case "isBad":
-		continue T
-
-			
 	case "isGood":
 		return
+
+			
+	case "isBad":
+		continue T
 
 			
 default:
@@ -130,18 +129,15 @@ func foo_main(args []string){
 T:
 for {
 	
-sendArg_0 := default_int //TODO put a value here
-sendArg_1 := default_int //TODO put a value here
-var sendArgs [2]string
-sendArgs[0] = serialize_int(sendArg_0)
-sendArgs[1] = serialize_int(sendArg_1)
-
-send(channel, serialize_string_arr(sendArgs[:]))
+sendArg := default_int //TODO put a value here
+sendBuf := govec.PreparseSend("TODO govec send message", sendArg)
+capture.Write(channels[channel].Write, sendBuf)
 
 var ourBuf []byte
-recv(channel2, &ourBuf)
-recievedLabel := deserialize_string(ourBuf)
-switch recievedLabel{
+govector.Read(channels[channel2].Read, &ourBuf)
+var receivedLabel string
+capture.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+switch receivedLabel{
 	
 	case "isGood":
 		return
