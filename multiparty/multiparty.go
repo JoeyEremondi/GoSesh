@@ -49,7 +49,11 @@ func %s_main(args []string){
 	return fmt.Sprintf(`
 package main
 
-import "os"
+import (
+	"os"
+	"github.com/arcaneiceman/GoVector/govec"
+	"github.com/arcaneiceman/GoVector/govec/capture"
+)
 
 func main(){
 	argsWithoutProg := os.Args[1:]
@@ -105,6 +109,7 @@ type Sort string
 
 //implementing Sort's "sort" interface (to use go slices as sets)
 
+/*
 type SortSet []Sort
 
 func (ss SortSet) Len() int {
@@ -119,7 +124,7 @@ func (ss SortSet) Swap(i, j int) {
 	temp := ss[i]
 	ss[i] = ss[j]
 	ss[j] = temp
-}
+}*/
 
 type ParticipantSet []Participant
 
@@ -223,7 +228,7 @@ func (p Prefix) participants() []Participant {
 
 type ValueType struct {
 	prefix Prefix
-	value  []Sort
+	value  Sort
 	next   GlobalType
 }
 
@@ -233,6 +238,7 @@ func SingletonValue(s Sort) []Sort {
 	return ans
 }
 
+/*
 func equals(a, b SortSet) bool {
 	if a.Len() != b.Len() {
 		return false
@@ -245,7 +251,7 @@ func equals(a, b SortSet) bool {
 		}
 	}
 	return true
-}
+}*/
 
 func (t ValueType) isWellFormed() bool {
 	return t.next.isWellFormed()
@@ -280,7 +286,7 @@ func (t ValueType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case ValueType:
 		gt := g.(ValueType)
-		return gt.prefix == t.prefix && equals(gt.value, t.value) && t.next.equals(gt.next)
+		return gt.prefix == t.prefix && (gt.value == t.value) && t.next.equals(gt.next)
 	}
 	return false
 }
@@ -770,7 +776,7 @@ func findProjection(participant Participant, projections []ProjectionType) (Proj
 
 type LocalSendType struct {
 	Channel Channel
-	Value   []Sort
+	Value   Sort
 	Next    LocalType
 }
 
@@ -784,34 +790,31 @@ func (t LocalSendType) Stub() string {
 
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
-	argDefaultStrings := ""
-	assignmentStrings := fmt.Sprintf("var sendArgs [%d]string\n", len(t.Value))
-	for i, sort := range t.Value {
-		argDefaultStrings += fmt.Sprintf("sendArg_%d := default_%s //TODO put a value here\n", i, sort)
+	argDefaultString := fmt.Sprintf("sendArg := default_%s //TODO put a value here\n", t.Value)
+	assignmentStrings := fmt.Sprintf("sendBuf := govec.PreparseSend(\"TODO govec send message\", sendArg)sendArgs [%d]string\n", len(t.Value))
 
-		assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
+	//assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
 
-	}
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 %s
-send(%s, serialize_string_arr(sendArgs[:]))
+capture.Write(channels[%s].Write, sendBuf)
 %s
-	`, argDefaultStrings+assignmentStrings, t.Channel, t.Next.Stub())
+	`, argDefaultString+assignmentStrings, t.Channel, t.Next.Stub())
 }
 
 func (t LocalSendType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalSendType:
 		lt := l.(LocalSendType)
-		return t.Channel == lt.Channel && equals(t.Value, lt.Value) && t.Next.Equals(lt.Next)
+		return t.Channel == lt.Channel && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalReceiveType struct {
 	Channel Channel
-	Value   []Sort
+	Value   Sort
 	Next    LocalType
 }
 
@@ -824,27 +827,23 @@ func (t LocalReceiveType) Substitute(u LocalNameType, tsub LocalType) LocalType 
 func (t LocalReceiveType) Stub() string {
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
-	assignmentStrings := ""
-	for i, sort := range t.Value {
-
-		assignmentStrings += fmt.Sprintf("recievedValue_%d := deserialize_%s(recvArgs[%d])\n", i, sort, i)
-
-	}
+	assignmentString := ""
+	assignmentString += fmt.Sprintf("var receivedValue %s\n", t.Value)
+	assignmentString += "govector.UnpackRecieve(\"TODO unpack message\", recvBuf, &receivedValue)"
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 var recvBuf []byte
-send(%s, recvBuf)
-recvArgs := deserialize_string_array(recvBuf)
+capture.Read(channels[%s].Read, recvBuf)
 %s
 %s
-	`, t.Channel, assignmentStrings, t.Next.Stub())
+	`, t.Channel, assignmentString, t.Next.Stub())
 }
 
 func (t LocalReceiveType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalReceiveType:
 		lt := l.(LocalReceiveType)
-		return t.Channel == lt.Channel && equals(t.Value, lt.Value) && t.Next.Equals(lt.Next)
+		return t.Channel == lt.Channel && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
@@ -1050,7 +1049,7 @@ func (t LocalEndType) Equals(l LocalType) bool {
 
 // PROGRAMMING PHRASES (SYNTAX)
 
-type SortingNames map[string]SortSet
+type SortingNames map[string]Sort
 
 type ProcessVariable struct {
 	sorts []Sort
@@ -1193,6 +1192,7 @@ func (e Exp) typecheck() Sort {
 
 type LocalName string
 
+/*
 // Structs that shall be a program
 
 type RequestSession struct {
@@ -1320,8 +1320,9 @@ func (sv SendValue) typecheck(envNames SortingNames, envVars SortingVariables, g
 		return nil, errors.New("Channels Type in Send is not a singleton.")
 	}
 
-	return P.add(sv.s, append(make([]ProjectionType, 0, 1),
-		ProjectionType{participant: channelsType[0].participant, T: LocalSendType{Channel: sv.k, Value: expSorts, Next: channelsType[0].T}})), nil
+	panic("TODO! Fix Felipe's checking code for single sorts")
+	//return P.add(sv.s, append(make([]ProjectionType, 0, 1),
+	//ProjectionType{participant: channelsType[0].participant, T: LocalSendType{Channel: sv.k, Value: expSorts, Next: channelsType[0].T}})), nil
 }
 
 type ReceiveValue struct {
@@ -1329,7 +1330,7 @@ type ReceiveValue struct {
 	s     ChannelSet
 	k     Channel
 	names []string //\~x
-	types SortSet
+	types Sort
 	P     Program
 }
 
@@ -1577,7 +1578,7 @@ type VarDef struct {
 
 	identifier string          //X
 	argvars    []string        //\~x
-	argtypes   []SortSet       //types for \~x. Not on the original spec, but to simplify typing.
+	argtypes   []Sort          //types for \~x. Not on the original spec, but to simplify typing.
 	pv         ProcessVariable //Type for X
 	s          []ChannelSet
 	P, Q       Program
@@ -1674,7 +1675,7 @@ func (cp CallProcess) typecheck(envNames SortingNames, envVars SortingVariables,
 	}
 
 	return ans, nil
-}
+} */
 
 func main() {
 	t := LocalSendType{}
