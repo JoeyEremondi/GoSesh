@@ -44,7 +44,7 @@ if argsWithoutProg[1] == "--%s"{
 func %s_main(args []string){
 	%s
 }
-			`, part, ourProjection.stub())
+			`, part, ourProjection.Stub())
 	}
 	return fmt.Sprintf(`
 package main
@@ -269,9 +269,9 @@ func (t ValueType) project(p Participant) (LocalType, error) {
 	if err != nil {
 		return nil, err
 	} else if t.prefix.P1 == p {
-		ans = LocalSendType{channel: t.prefix.channel, value: t.value, next: ans}
+		ans = LocalSendType{Channel: t.prefix.channel, Value: t.value, Next: ans}
 	} else if t.prefix.P2 == p {
-		ans = LocalReceiveType{channel: t.prefix.channel, value: t.value, next: ans}
+		ans = LocalReceiveType{Channel: t.prefix.channel, Value: t.value, Next: ans}
 	}
 	return ans, err
 }
@@ -352,7 +352,7 @@ func (t BranchingType) project(p Participant) (LocalType, error) {
 		}
 
 		for _, value := range branches {
-			if !prevValue.equals(value) {
+			if !prevValue.Equals(value) {
 				return false
 			}
 		}
@@ -360,9 +360,9 @@ func (t BranchingType) project(p Participant) (LocalType, error) {
 	}
 
 	if t.prefix.P1 == p {
-		return LocalSelectionType{channel: t.prefix.channel, branches: branches}, nil
+		return LocalSelectionType{Channel: t.prefix.channel, Branches: branches}, nil
 	} else if t.prefix.P2 == p {
-		return LocalBranchingType{channel: t.prefix.channel, branches: branches}, nil
+		return LocalBranchingType{Channel: t.prefix.channel, Branches: branches}, nil
 	} else if unique(branches) {
 		for _, branch := range branches {
 			return branch, nil
@@ -484,7 +484,7 @@ func (t RecursiveType) project(p Participant) (LocalType, error) {
 	if err != nil {
 		return nil, err
 	}
-	return LocalRecursiveType{bind: LocalNameType(t.bind), body: body}, nil
+	return LocalRecursiveType{Bind: LocalNameType(t.bind), Body: body}, nil
 }
 
 func (t RecursiveType) equals(g GlobalType) bool {
@@ -726,9 +726,9 @@ func unfold(gt GlobalType, env map[NameType]GlobalType) GlobalType {
 // LOCAL TYPES
 
 type LocalType interface {
-	equals(t LocalType) bool
-	stub() string
-	substitute(u LocalNameType, t LocalType) LocalType
+	Equals(t LocalType) bool
+	Stub() string
+	Substitute(u LocalNameType, t LocalType) LocalType
 }
 
 type ProjectionType struct {
@@ -737,23 +737,23 @@ type ProjectionType struct {
 	participant Participant
 }
 
-func (t ProjectionType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t ProjectionType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	ret := t
-	ret.T = t.T.substitute(u, tsub)
+	ret.T = t.T.Substitute(u, tsub)
 	return ret
 }
 
 //Projection type is just a local type paired with which participant it is
 //We want to treat it like a local type
-func (t ProjectionType) stub() string {
-	return t.T.stub()
+func (t ProjectionType) Stub() string {
+	return t.T.Stub()
 }
 
-func (t ProjectionType) equals(l LocalType) bool {
+func (t ProjectionType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case ProjectionType:
 		lt := l.(ProjectionType)
-		return t.participant == lt.participant && t.T.equals(lt.T)
+		return t.participant == lt.participant && t.T.Equals(lt.T)
 	}
 	return false
 }
@@ -769,24 +769,24 @@ func findProjection(participant Participant, projections []ProjectionType) (Proj
 }
 
 type LocalSendType struct {
-	channel Channel
-	value   []Sort
-	next    LocalType
+	Channel Channel
+	Value   []Sort
+	Next    LocalType
 }
 
-func (t LocalSendType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalSendType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	ret := t
-	ret.next = t.next.substitute(u, tsub)
+	ret.Next = t.Next.Substitute(u, tsub)
 	return ret
 }
 
-func (t LocalSendType) stub() string {
+func (t LocalSendType) Stub() string {
 
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
 	argDefaultStrings := ""
-	assignmentStrings := fmt.Sprintf("var sendArgs [%d]string\n", len(t.value))
-	for i, sort := range t.value {
+	assignmentStrings := fmt.Sprintf("var sendArgs [%d]string\n", len(t.Value))
+	for i, sort := range t.Value {
 		argDefaultStrings += fmt.Sprintf("sendArg_%d := default_%s //TODO put a value here\n", i, sort)
 
 		assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
@@ -797,35 +797,35 @@ func (t LocalSendType) stub() string {
 %s
 send(%s, serialize_string_arr(sendArgs[:]))
 %s
-	`, argDefaultStrings+assignmentStrings, t.channel, t.next.stub())
+	`, argDefaultStrings+assignmentStrings, t.Channel, t.Next.Stub())
 }
 
-func (t LocalSendType) equals(l LocalType) bool {
+func (t LocalSendType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalSendType:
 		lt := l.(LocalSendType)
-		return t.channel == lt.channel && equals(t.value, lt.value) && t.next.equals(lt.next)
+		return t.Channel == lt.Channel && equals(t.Value, lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalReceiveType struct {
-	channel Channel
-	value   []Sort
-	next    LocalType
+	Channel Channel
+	Value   []Sort
+	Next    LocalType
 }
 
-func (t LocalReceiveType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalReceiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	ret := t
-	ret.next = t.next.substitute(u, tsub)
+	ret.Next = t.Next.Substitute(u, tsub)
 	return ret
 }
 
-func (t LocalReceiveType) stub() string {
+func (t LocalReceiveType) Stub() string {
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
 	assignmentStrings := ""
-	for i, sort := range t.value {
+	for i, sort := range t.Value {
 
 		assignmentStrings += fmt.Sprintf("recievedValue_%d := deserialize_%s(recvArgs[%d])\n", i, sort, i)
 
@@ -837,28 +837,28 @@ send(%s, recvBuf)
 recvArgs := deserialize_string_array(recvBuf)
 %s
 %s
-	`, t.channel, assignmentStrings, t.next.stub())
+	`, t.Channel, assignmentStrings, t.Next.Stub())
 }
 
-func (t LocalReceiveType) equals(l LocalType) bool {
+func (t LocalReceiveType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalReceiveType:
 		lt := l.(LocalReceiveType)
-		return t.channel == lt.channel && equals(t.value, lt.value) && t.next.equals(lt.next)
+		return t.Channel == lt.Channel && equals(t.Value, lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalSelectionType struct {
 	// k \oplus
-	channel  Channel
-	branches map[string]LocalType
+	Channel  Channel
+	Branches map[string]LocalType
 }
 
-func (t LocalSelectionType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalSelectionType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	ret := t
-	for k, branchType := range t.branches {
-		ret.branches[k] = branchType.substitute(u, tsub)
+	for k, branchType := range t.Branches {
+		ret.Branches[k] = branchType.Substitute(u, tsub)
 	}
 	return ret
 }
@@ -877,17 +877,17 @@ func defaultLabelAndCases(branches map[string]LocalType) (string, string) {
 	case "%s":
 		%s
 
-			`, label, branchType.stub())
+			`, label, branchType.Stub())
 	}
 	return ourLabel, caseStrings
 }
 
-func (t LocalSelectionType) stub() string {
-	if len(t.branches) == 0 {
+func (t LocalSelectionType) Stub() string {
+	if len(t.Branches) == 0 {
 		panic("Cannot have a Selection with 0 branches")
 	}
 
-	ourLabel, caseStrings := defaultLabelAndCases(t.branches)
+	ourLabel, caseStrings := defaultLabelAndCases(t.Branches)
 
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
@@ -898,43 +898,43 @@ switch labelToSend{
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, ourLabel, t.channel, ourLabel, caseStrings)
+		`, ourLabel, t.Channel, ourLabel, caseStrings)
 }
 
-func (t LocalSelectionType) equals(l LocalType) bool {
+func (t LocalSelectionType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalSelectionType:
 		lt := l.(LocalSelectionType)
-		for k := range t.branches {
-			if !t.branches[k].equals(lt.branches[k]) {
+		for k := range t.Branches {
+			if !t.Branches[k].Equals(lt.Branches[k]) {
 				return false
 			}
 		}
-		return t.channel == lt.channel
+		return t.Channel == lt.Channel
 	}
 	return false
 }
 
 type LocalBranchingType struct {
 	// k &
-	channel  Channel
-	branches map[string]LocalType
+	Channel  Channel
+	Branches map[string]LocalType
 }
 
-func (t LocalBranchingType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalBranchingType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	ret := t
-	for k, branchType := range t.branches {
-		ret.branches[k] = branchType.substitute(u, tsub)
+	for k, branchType := range t.Branches {
+		ret.Branches[k] = branchType.Substitute(u, tsub)
 	}
 	return ret
 }
 
-func (t LocalBranchingType) stub() string {
-	if len(t.branches) == 0 {
+func (t LocalBranchingType) Stub() string {
+	if len(t.Branches) == 0 {
 		panic("Cannot have a Branching with 0 branches")
 	}
 
-	_, caseStrings := defaultLabelAndCases(t.branches)
+	_, caseStrings := defaultLabelAndCases(t.Branches)
 
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
@@ -946,26 +946,26 @@ switch recievedLabel{
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, t.channel, caseStrings)
+		`, t.Channel, caseStrings)
 }
 
-func (t LocalBranchingType) equals(l LocalType) bool {
+func (t LocalBranchingType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalBranchingType:
 		lt := l.(LocalBranchingType)
-		for k := range t.branches {
-			if !t.branches[k].equals(lt.branches[k]) {
+		for k := range t.Branches {
+			if !t.Branches[k].Equals(lt.Branches[k]) {
 				return false
 			}
 		}
-		return t.channel == lt.channel
+		return t.Channel == lt.Channel
 	}
 	return false
 }
 
 type LocalNameType string
 
-func (t LocalNameType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalNameType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	if u == t {
 		return tsub
 	} else {
@@ -975,11 +975,11 @@ func (t LocalNameType) substitute(u LocalNameType, tsub LocalType) LocalType {
 
 //When we see a reference to a type, it was bound by a recursive definition
 //So we jump back to whatever code does the thing recursively
-func (t LocalNameType) stub() string {
+func (t LocalNameType) Stub() string {
 	return fmt.Sprintf("continue %s", t)
 }
 
-func (t LocalNameType) equals(l LocalType) bool {
+func (t LocalNameType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalNameType:
 		return t == l.(LocalNameType)
@@ -988,17 +988,21 @@ func (t LocalNameType) equals(l LocalType) bool {
 }
 
 type LocalRecursiveType struct {
-	bind LocalNameType
-	body LocalType
+	Bind LocalNameType
+	Body LocalType
 }
 
-func (t LocalRecursiveType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalRecursiveType) UnfoldOneLevel() LocalType {
+	return t.Substitute(t.Bind, t)
+}
+
+func (t LocalRecursiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	//Don't substitute if we're shadowing
-	if u == t.bind {
+	if u == t.Bind {
 		return u
 	} else {
 		ret := t
-		ret.body = t.body.substitute(u, tsub)
+		ret.Body = t.Body.Substitute(u, tsub)
 		return ret
 	}
 }
@@ -1006,35 +1010,35 @@ func (t LocalRecursiveType) substitute(u LocalNameType, tsub LocalType) LocalTyp
 //Create a labeled infinite loop
 //Any type we refer to ourselves in this type,
 //we jump back to the top of the loop
-func (t LocalRecursiveType) stub() string {
+func (t LocalRecursiveType) Stub() string {
 	return fmt.Sprintf(`
 %s:
 for {
 	%s
 }
-		`, t.bind, t.body.stub())
+		`, t.Bind, t.Body.Stub())
 }
 
-func (t LocalRecursiveType) equals(l LocalType) bool {
+func (t LocalRecursiveType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalRecursiveType:
 		lt := l.(LocalRecursiveType)
-		return t.bind.equals(lt.bind) && t.body.equals(lt.body)
+		return t.Bind.Equals(lt.Bind) && t.Body.Equals(lt.Body)
 	}
 	return false
 }
 
 type LocalEndType struct{}
 
-func (t LocalEndType) substitute(u LocalNameType, tsub LocalType) LocalType {
+func (t LocalEndType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	return t
 }
 
-func (t LocalEndType) stub() string {
+func (t LocalEndType) Stub() string {
 	return "return"
 }
 
-func (t LocalEndType) equals(l LocalType) bool {
+func (t LocalEndType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalEndType:
 		return true
@@ -1231,7 +1235,7 @@ func (rs RequestSession) typecheck(names SortingNames, vars SortingVariables, gt
 		}
 		if actual, err := gts[rs.a].project(participant); err == nil {
 			if projection, err := findProjection(participant, projections); err == nil {
-				if !projection.equals(actual) {
+				if !projection.Equals(actual) {
 					return nil, errors.New(fmt.Sprintf("Projection is different from what was in the Typing of projections!, in particular, %+v != %+v", projection, actual))
 				}
 			} else {
@@ -1271,7 +1275,7 @@ func (rs AcceptSession) typecheck(envNames SortingNames, envVars SortingVariable
 		}
 		if actual, err := gts[rs.a].project(participant); err == nil {
 			if projection, err := findProjection(participant, projections); err == nil {
-				if !projection.equals(actual) {
+				if !projection.Equals(actual) {
 					return nil, errors.New(fmt.Sprintf("Projection is different from what was in the Typing of projections!, in particular, %+v != %+v", projection, actual))
 				}
 			} else {
@@ -1317,7 +1321,7 @@ func (sv SendValue) typecheck(envNames SortingNames, envVars SortingVariables, g
 	}
 
 	return P.add(sv.s, append(make([]ProjectionType, 0, 1),
-		ProjectionType{participant: channelsType[0].participant, T: LocalSendType{channel: sv.k, value: expSorts, next: channelsType[0].T}})), nil
+		ProjectionType{participant: channelsType[0].participant, T: LocalSendType{Channel: sv.k, Value: expSorts, Next: channelsType[0].T}})), nil
 }
 
 type ReceiveValue struct {
@@ -1354,7 +1358,7 @@ func (rv ReceiveValue) typecheck(envNames SortingNames, envVars SortingVariables
 	}
 
 	return P.add(rv.s, append(make([]ProjectionType, 0, 1),
-		ProjectionType{participant: channelsType[0].participant, T: LocalReceiveType{channel: rv.k, value: rv.types, next: channelsType[0].T}})), nil
+		ProjectionType{participant: channelsType[0].participant, T: LocalReceiveType{Channel: rv.k, Value: rv.types, Next: channelsType[0].T}})), nil
 }
 
 // We do not consider [Deleg] nor [SRec, because we do not want to send session types through channels (yet).
@@ -1394,7 +1398,7 @@ func (sl SelectLabel) typecheck(envNames SortingNames, envVars SortingVariables,
 		return nil, errors.New("Too many typings for selection's next Process")
 	}
 
-	if !lastTyping.values[0].equals(sl.T.branches[sl.label]) {
+	if !lastTyping.values[0].Equals(sl.T.Branches[sl.label]) {
 		return nil, errors.New("Type of the branch not equal to the type required for the continuing process on selection")
 	}
 	return TypingPair{key: lastTyping.key, values: append(make([]ProjectionType, 0, 1), ProjectionType{T: sl.T, participant: lastTyping.values[0].participant}), next: lastTyping.next}, nil
@@ -1437,8 +1441,8 @@ func (bl BranchLabel) typecheck(envNames SortingNames, envVars SortingVariables,
 	}
 
 	return TypingPair{key: channels[0], values: append(make([]ProjectionType, 0, 1),
-		ProjectionType{T: LocalBranchingType{channel: bl.channel,
-			branches: typings}, participant: participant[0]}), next: rest[0]}, nil
+		ProjectionType{T: LocalBranchingType{Channel: bl.channel,
+			Branches: typings}, participant: participant[0]}), next: rest[0]}, nil
 
 }
 
@@ -1484,7 +1488,7 @@ func (c Conditional) typecheck(envNames SortingNames, envVars SortingVariables, 
 			return nil, errors.New("Domain mismatch in conditional. different codomains..")
 		}
 		for x := range domThen {
-			if !domThen[x].equals(domElse[x]) {
+			if !domThen[x].Equals(domElse[x]) {
 				return nil, errors.New("Domain mismatch in conditional. different codomains.")
 			}
 		}
@@ -1501,7 +1505,7 @@ func (c Conditional) typecheck(envNames SortingNames, envVars SortingVariables, 
 			return nil, errors.New("Domain mismatch in conditional. different codomains..")
 		}
 		for x := range domThen {
-			if !domThen[x].equals(domElse[x]) {
+			if !domThen[x].Equals(domElse[x]) {
 				return nil, errors.New("Domain mismatch in conditional. different codomains.")
 			}
 		}
@@ -1674,5 +1678,5 @@ func (cp CallProcess) typecheck(envNames SortingNames, envVars SortingVariables,
 
 func main() {
 	t := LocalSendType{}
-	println(t.stub())
+	println(t.Stub())
 }

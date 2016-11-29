@@ -6,8 +6,10 @@ import (
 	"net/rpc"
 	"testing"
 
-	"github.com/joey/sessions/multiparty"
+	"github.com/JoeyEremondi/GoSesh/multiparty"
 )
+
+//"github.com/JoeyEremondi/GoSesh/multiparty"
 
 // Run the single test with comments like:
 // go test -v buyerseller_test.go
