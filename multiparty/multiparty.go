@@ -27,9 +27,22 @@ type Participant string
 //Generate the program with all the stubs for a global type
 func program(t GlobalType) string {
 
+	fmt.Printf("NUM participants %d\n", len(t.participants()))
+
 	participantCases := ""
 	participantFunctions := ""
+
+	//We need this to remove duplicate participants, bug in Felipe's code?
+	seenParticipants := make(map[Participant]bool)
+
 	for _, part := range t.participants() {
+		seenParticipants[part] = true
+	}
+
+	for part, _ := range seenParticipants {
+		fmt.Printf("Participant %s\n", part)
+		fmt.Printf("Adding Participant %s\n", part)
+		seenParticipants[part] = true
 		participantCases += fmt.Sprintf(`
 if argsWithoutProg[1] == "--%s"{
 	%s_main(argsWithoutProg[2:])
@@ -42,6 +55,7 @@ if argsWithoutProg[1] == "--%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
+	var checker dynamic.Checker
 	%s
 }
 			`, part, ourProjection.Stub())
@@ -51,8 +65,8 @@ package main
 
 import (
 	"os"
-	"github.com/arcaneiceman/GoVector/govec"
-	"github.com/arcaneiceman/GoVector/capture"
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+
 )
 
 func main(){
@@ -106,6 +120,10 @@ func count(participants ParticipantSet) int {
 
 type Channel string
 type Sort string
+
+func addQuotes(s Channel) string {
+	return fmt.Sprintf(`"%s"`, s)
+}
 
 //implementing Sort's "sort" interface (to use go slices as sets)
 
@@ -790,17 +808,15 @@ func (t LocalSendType) Stub() string {
 
 	//Generate a variable for each argument, assigning it the default value
 	//Along with an array that contains them all serialized as strings
-	argDefaultString := fmt.Sprintf("sendArg := default_%s //TODO put a value here\n", t.Value)
-	assignmentStrings := "sendBuf := govec.PreparseSend(\"TODO govec send message\", sendArg)"
-
 	//assignmentStrings += fmt.Sprintf("sendArgs[%d] = serialize_%s(sendArg_%d)\n", i, sort, i)
 
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
+var sendArg %s //TODO put a value here
+sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+checker.Write(checker.channels[%s].Write, sendBuf)
 %s
-capture.Write(channels[%s].Write, sendBuf)
-%s
-	`, argDefaultString+assignmentStrings, t.Channel, t.Next.Stub())
+	`, t.Value, addQuotes(t.Channel), t.Next.Stub())
 }
 
 func (t LocalSendType) Equals(l LocalType) bool {
@@ -829,14 +845,14 @@ func (t LocalReceiveType) Stub() string {
 	//Along with an array that contains them all serialized as strings
 	assignmentString := ""
 	assignmentString += fmt.Sprintf("var receivedValue %s\n", t.Value)
-	assignmentString += "govector.UnpackRecieve(\"TODO unpack message\", recvBuf, &receivedValue)"
+	assignmentString += "checker.UnpackReceive(\"TODO unpack message\", recvBuf, &receivedValue)"
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 var recvBuf []byte
-capture.Read(channels[%s].Read, recvBuf)
+checker.Read(checker.channels[%s].Read, recvBuf)
 %s
 %s
-	`, t.Channel, assignmentString, t.Next.Stub())
+	`, addQuotes(t.Channel), assignmentString, t.Next.Stub())
 }
 
 func (t LocalReceiveType) Equals(l LocalType) bool {
@@ -891,14 +907,14 @@ func (t LocalSelectionType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var labelToSend = "%s" //TODO which label to send
-buf := govec.PrepareSend("TODO Select message", labelToSend)
-capture.Write(channels[%s].Write, buf)
+buf := checker.PrepareSend("TODO Select message", labelToSend)
+checker.Write(checker.channels[%s].Write, buf)
 switch labelToSend{
 	%s
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, ourLabel, t.Channel, caseStrings)
+		`, ourLabel, addQuotes(t.Channel), caseStrings)
 }
 
 func (t LocalSelectionType) Equals(l LocalType) bool {
@@ -939,15 +955,15 @@ func (t LocalBranchingType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var ourBuf []byte
-govector.Read(channels[%s].Read, &ourBuf)
+checker.Read(checker.channels[%s].Read, &ourBuf)
 var receivedLabel string
-capture.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
 	%s
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, t.Channel, caseStrings)
+		`, addQuotes(t.Channel), caseStrings)
 }
 
 func (t LocalBranchingType) Equals(l LocalType) bool {
@@ -1443,7 +1459,7 @@ func (bl BranchLabel) typecheck(envNames SortingNames, envVars SortingVariables,
 		typings[label] = pair.values[0].T
 	}
 
-	return TypingPair{key: channels[0], values: append(make([]ProjectionType, 0, 1),
+	return TypingPair{key: checker.channels[0], values: append(make([]ProjectionType, 0, 1),
 		ProjectionType{T: LocalBranchingType{Channel: bl.channel,
 			Branches: typings}, participant: participant[0]}), next: rest[0]}, nil
 

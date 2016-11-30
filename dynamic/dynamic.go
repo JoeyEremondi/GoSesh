@@ -2,6 +2,7 @@ package dynamic
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/JoeyEremondi/GoSesh/multiparty"
 	"github.com/arcaneiceman/GoVector/govec"
@@ -13,6 +14,7 @@ type Checker struct {
 	gv           *govec.GoLog
 	currentType  multiparty.LocalType
 	currentLabel *string
+	channels     map[string]*net.Conn
 	//TODO other stuff handy to have here?
 }
 
@@ -77,7 +79,7 @@ func (checker *Checker) advanceType() error {
 //Wrapper around GoVector's pack and unpack functions
 //These are where we check to make sure that the correct type is the current type
 //i.e. don't send on a receive, etc.
-func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{}) error {
+func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 
 	//Do the GoVector unpack
 	checker.gv.UnpackReceive(mesg, buf, unpack)
@@ -93,23 +95,26 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		case *string:
 			_, ok := t.Branches[*unpackString]
 			if !ok {
-				return fmt.Errorf("Received invalid label %s at branching point, should be one of TODO", *unpackString)
+				panic(fmt.Sprintf("Received invalid label %s at branching point, should be one of TODO", *unpackString))
 			}
 
 		default:
-			return fmt.Errorf("Unpacking data of the wrong type at a Branching point. Should be a string")
+			panic("Unpacking data of the wrong type at a Branching point. Should be a string")
 		}
 	default:
-		return fmt.Errorf("Tried to do send on recieve type")
+		panic("Tried to do send on receive type")
 
 	}
 
 	//Now that we're done, advance our type to whatever we do next
-	return checker.advanceType()
+	err := checker.advanceType()
+	if err != nil {
+		panic(err)
+	}
 }
 
 //The sending version
-func (checker *Checker) PrepareSend(mesg string, buf interface{}) ([]byte, error) {
+func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 
 	//Do the GoVector unpack
 	ret := checker.gv.PrepareSend(mesg, buf)
@@ -125,17 +130,21 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) ([]byte, error
 		case *string:
 			_, ok := t.Branches[*unpackString]
 			if !ok {
-				return nil, fmt.Errorf("Sent invalid label %s at branching point, should be one of TODO", *unpackString)
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
 			}
 
 		default:
-			return nil, fmt.Errorf("Unpacking data of the wrong type at a Selection point. Should be a string")
+			panic("Unpacking data of the wrong type at a Selection point. Should be a string")
 		}
 	default:
-		return nil, fmt.Errorf("Tried to do receive on send type")
+		panic("Tried to do receive on send type")
 
 	}
 
 	//Now that we're done, advance our type to whatever we do next
-	return ret, checker.advanceType()
+	err := checker.advanceType()
+	if err == nil {
+		return ret
+	}
+	panic(err)
 }

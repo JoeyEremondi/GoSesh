@@ -3,8 +3,8 @@ package main
 
 import (
 	"os"
-	"github.com/arcaneiceman/GoVector/govec"
-	"github.com/arcaneiceman/GoVector/capture"
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+
 )
 
 func main(){
@@ -18,29 +18,22 @@ if argsWithoutProg[1] == "--bar"{
 	bar_main(argsWithoutProg[2:])
 }
 			
-if argsWithoutProg[1] == "--bar"{
-	bar_main(argsWithoutProg[2:])
-}
-			
-if argsWithoutProg[1] == "--foo"{
-	foo_main(argsWithoutProg[2:])
-}
-			
 }
 
 func foo_main(args []string){
+	var checker dynamic.Checker
 	
 T:
 for {
 	
-sendArg := default_int //TODO put a value here
-sendBuf := govec.PreparseSend("TODO govec send message", sendArg)
-capture.Write(channels[channel].Write, sendBuf)
+var sendArg int //TODO put a value here
+sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+checker.Write(checker.channels["channel"].Write, sendBuf)
 
 var ourBuf []byte
-govector.Read(channels[channel2].Read, &ourBuf)
+checker.Read(checker.channels["channel2"].Read, &ourBuf)
 var receivedLabel string
-capture.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
 	
 	case "isGood":
@@ -61,90 +54,27 @@ default:
 }
 			
 func bar_main(args []string){
+	var checker dynamic.Checker
 	
 T:
 for {
 	
 var recvBuf []byte
-capture.Read(channels[channel].Read, recvBuf)
+checker.Read(checker.channels["channel"].Read, recvBuf)
 var receivedValue int
-govector.UnpackRecieve("TODO unpack message", recvBuf, &receivedValue)
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 
-var labelToSend = "isGood" //TODO which label to send
-buf := govec.PrepareSend("TODO Select message", labelToSend)
-capture.Write(channels[channel2].Write, buf)
+var labelToSend = "isBad" //TODO which label to send
+buf := checker.PrepareSend("TODO Select message", labelToSend)
+checker.Write(checker.channels["channel2"].Write, buf)
 switch labelToSend{
 	
-	case "isGood":
-		return
-
-			
 	case "isBad":
 		continue T
 
 			
-default:
-	panic("Invalid label sent at selection choice")
-}
-		
-	
-}
-		
-}
-			
-func bar_main(args []string){
-	
-T:
-for {
-	
-var recvBuf []byte
-capture.Read(channels[channel].Read, recvBuf)
-var receivedValue int
-govector.UnpackRecieve("TODO unpack message", recvBuf, &receivedValue)
-
-var labelToSend = "isGood" //TODO which label to send
-buf := govec.PrepareSend("TODO Select message", labelToSend)
-capture.Write(channels[channel2].Write, buf)
-switch labelToSend{
-	
 	case "isGood":
 		return
-
-			
-	case "isBad":
-		continue T
-
-			
-default:
-	panic("Invalid label sent at selection choice")
-}
-		
-	
-}
-		
-}
-			
-func foo_main(args []string){
-	
-T:
-for {
-	
-sendArg := default_int //TODO put a value here
-sendBuf := govec.PreparseSend("TODO govec send message", sendArg)
-capture.Write(channels[channel].Write, sendBuf)
-
-var ourBuf []byte
-govector.Read(channels[channel2].Read, &ourBuf)
-var receivedLabel string
-capture.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
-switch receivedLabel{
-	
-	case "isGood":
-		return
-
-			
-	case "isBad":
-		continue T
 
 			
 default:
