@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/JoeyEremondi/GoSesh/multiparty"
+	"github.com/arcaneiceman/GoVector/capture"
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
@@ -14,7 +15,7 @@ type Checker struct {
 	gv           *govec.GoLog
 	currentType  multiparty.LocalType
 	currentLabel *string
-	channels     map[string]*net.Conn
+	Channels     map[string]*net.Conn
 	//TODO other stuff handy to have here?
 }
 
@@ -147,4 +148,14 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 		return ret
 	}
 	panic(err)
+}
+
+func (checker Checker) WriteTo(c multiparty.Channel, write func(c multiparty.Channel, b []byte) (int, error), b []byte) (int, error) {
+	curriedWrite := func(b []byte) (int, error) { return write(c, b) }
+	return capture.Write(curriedWrite, b)
+}
+
+func (checker Checker) ReadFrom(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
+	curriedRead := func([]byte) (int, error) { return read(c, b) }
+	return capture.Read(curriedRead, b)
 }

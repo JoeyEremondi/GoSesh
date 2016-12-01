@@ -814,7 +814,7 @@ func (t LocalSendType) Stub() string {
 	return fmt.Sprintf(`
 var sendArg %s //TODO put a value here
 sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.channels[%s].Write, sendBuf)
+checker.Write(checker.Channels[%s].Write, sendBuf)
 %s
 	`, t.Value, addQuotes(t.Channel), t.Next.Stub())
 }
@@ -849,7 +849,7 @@ func (t LocalReceiveType) Stub() string {
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 var recvBuf []byte
-checker.Read(checker.channels[%s].Read, recvBuf)
+checker.Read(checker.Channels[%s].Read, recvBuf)
 %s
 %s
 	`, addQuotes(t.Channel), assignmentString, t.Next.Stub())
@@ -908,7 +908,7 @@ func (t LocalSelectionType) Stub() string {
 	return fmt.Sprintf(`
 var labelToSend = "%s" //TODO which label to send
 buf := checker.PrepareSend("TODO Select message", labelToSend)
-checker.Write(checker.channels[%s].Write, buf)
+checker.Write(checker.Channels[%s].Write, buf)
 switch labelToSend{
 	%s
 default:
@@ -955,7 +955,7 @@ func (t LocalBranchingType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var ourBuf []byte
-checker.Read(checker.channels[%s].Read, &ourBuf)
+checker.Read(checker.Channels[%s].Read, &ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
@@ -1459,7 +1459,7 @@ func (bl BranchLabel) typecheck(envNames SortingNames, envVars SortingVariables,
 		typings[label] = pair.values[0].T
 	}
 
-	return TypingPair{key: checker.channels[0], values: append(make([]ProjectionType, 0, 1),
+	return TypingPair{key: checker.Channels[0], values: append(make([]ProjectionType, 0, 1),
 		ProjectionType{T: LocalBranchingType{Channel: bl.channel,
 			Branches: typings}, participant: participant[0]}), next: rest[0]}, nil
 

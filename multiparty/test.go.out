@@ -10,31 +10,31 @@ import (
 func main(){
 	argsWithoutProg := os.Args[1:]
 	
-if argsWithoutProg[1] == "--foo"{
-	foo_main(argsWithoutProg[2:])
-}
-			
 if argsWithoutProg[1] == "--bar"{
 	bar_main(argsWithoutProg[2:])
 }
 			
+if argsWithoutProg[1] == "--foo"{
+	foo_main(argsWithoutProg[2:])
+}
+			
 }
 
-func foo_main(args []string){
+func bar_main(args []string){
 	var checker dynamic.Checker
 	
 T:
 for {
 	
-var sendArg int //TODO put a value here
-sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.channels["channel"].Write, sendBuf)
+var recvBuf []byte
+checker.Read(checker.Channels["channel"].Read, recvBuf)
+var receivedValue int
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 
-var ourBuf []byte
-checker.Read(checker.channels["channel2"].Read, &ourBuf)
-var receivedLabel string
-checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
-switch receivedLabel{
+var labelToSend = "isGood" //TODO which label to send
+buf := checker.PrepareSend("TODO Select message", labelToSend)
+checker.Write(checker.Channels["channel2"].Write, buf)
+switch labelToSend{
 	
 	case "isGood":
 		return
@@ -53,28 +53,28 @@ default:
 		
 }
 			
-func bar_main(args []string){
+func foo_main(args []string){
 	var checker dynamic.Checker
 	
 T:
 for {
 	
-var recvBuf []byte
-checker.Read(checker.channels["channel"].Read, recvBuf)
-var receivedValue int
-checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+var sendArg int //TODO put a value here
+sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+checker.Write(checker.Channels["channel"].Write, sendBuf)
 
-var labelToSend = "isBad" //TODO which label to send
-buf := checker.PrepareSend("TODO Select message", labelToSend)
-checker.Write(checker.channels["channel2"].Write, buf)
-switch labelToSend{
+var ourBuf []byte
+checker.Read(checker.Channels["channel2"].Read, &ourBuf)
+var receivedLabel string
+checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+switch receivedLabel{
 	
-	case "isBad":
-		continue T
-
-			
 	case "isGood":
 		return
+
+			
+	case "isBad":
+		continue T
 
 			
 default:
