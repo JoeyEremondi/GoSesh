@@ -22,7 +22,30 @@ type GlobalType interface {
 	equals(t GlobalType) bool
 }
 
+// TODO these kinds of non-keyed types are super annoying because we have to use
+// reflection to get the value out :S
 type Participant string
+
+type Prefix struct {
+	P1, P2   Participant
+	PChannel Channel
+}
+
+type ValueType struct {
+	ValuePrefix Prefix
+	Value       Sort
+	ValueNext   GlobalType
+}
+
+type BranchingType struct {
+	BranchPrefix Prefix
+	Branches     map[string]GlobalType
+}
+
+type RecursiveType struct {
+	Bind NameType
+	Body GlobalType
+}
 
 //Generate the program with all the stubs for a global type
 func program(t GlobalType) string {
@@ -144,25 +167,6 @@ func addQuotes(s Channel) string {
 	return fmt.Sprintf(`"%s"`, s)
 }
 
-//implementing Sort's "sort" interface (to use go slices as sets)
-
-/*
-type SortSet []Sort
-
-func (ss SortSet) Len() int {
-	return len(ss)
-}
-
-func (ss SortSet) Less(i, j int) bool {
-	return ss[i] < ss[j]
-}
-
-func (ss SortSet) Swap(i, j int) {
-	temp := ss[i]
-	ss[i] = ss[j]
-	ss[j] = temp
-}*/
-
 type ParticipantSet []Participant
 
 func (ps ParticipantSet) Len() int {
@@ -251,22 +255,11 @@ func (a ChannelSet) disjoint(b ChannelSet) bool {
 	return true
 }
 
-type Prefix struct {
-	P1, P2  Participant
-	channel Channel
-}
-
 func (p Prefix) participants() []Participant {
 	ans := make([]Participant, 2, 2)
 	ans[0] = p.P1
 	ans[1] = p.P2
 	return ans
-}
-
-type ValueType struct {
-	prefix Prefix
-	value  Sort
-	next   GlobalType
 }
 
 func SingletonValue(s Sort) []Sort {
@@ -275,46 +268,31 @@ func SingletonValue(s Sort) []Sort {
 	return ans
 }
 
-/*
-func equals(a, b SortSet) bool {
-	if a.Len() != b.Len() {
-		return false
-	}
-	sort.Sort(a)
-	sort.Sort(b)
-	for k := range a {
-		if a[k] != b[k] {
-			return false
-		}
-	}
-	return true
-}*/
-
 func (t ValueType) isWellFormed() bool {
-	return t.next.isWellFormed()
+	return t.ValueNext.isWellFormed()
 }
 
 func (t ValueType) Prefixes() [][]Prefix {
-	current := append(make([]Prefix, 0, 1), t.prefix)
+	current := append(make([]Prefix, 0, 1), t.ValuePrefix)
 	ans := append(make([][]Prefix, 0, 1), current)
-	for _, prefix := range t.next.Prefixes() {
+	for _, prefix := range t.ValueNext.Prefixes() {
 		ans = append(ans, append(current, prefix...))
 	}
 	return ans
 }
 
 func (t ValueType) participants() []Participant {
-	return append(t.prefix.participants(), t.next.participants()...)
+	return append(t.ValuePrefix.participants(), t.ValueNext.participants()...)
 }
 
 func (t ValueType) project(p Participant) (LocalType, error) {
-	ans, err := t.next.project(p)
+	ans, err := t.ValueNext.project(p)
 	if err != nil {
 		return nil, err
-	} else if t.prefix.P1 == p {
-		ans = LocalSendType{Channel: t.prefix.channel, Value: t.value, Next: ans}
-	} else if t.prefix.P2 == p {
-		ans = LocalReceiveType{Channel: t.prefix.channel, Value: t.value, Next: ans}
+	} else if t.ValuePrefix.P1 == p {
+		ans = LocalSendType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
+	} else if t.ValuePrefix.P2 == p {
+		ans = LocalReceiveType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
 	}
 	return ans, err
 }
@@ -323,32 +301,27 @@ func (t ValueType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case ValueType:
 		gt := g.(ValueType)
-		return gt.prefix == t.prefix && (gt.value == t.value) && t.next.equals(gt.next)
+		return gt.ValuePrefix == t.ValuePrefix && (gt.Value == t.Value) && t.ValueNext.equals(gt.ValueNext)
 	}
 	return false
 }
 
 func (t ValueType) channels() ChannelSet {
-	return append(t.next.channels(), t.prefix.channel)
-}
-
-type BranchingType struct {
-	prefix   Prefix
-	branches map[string]GlobalType
+	return append(t.ValueNext.channels(), t.ValuePrefix.PChannel)
 }
 
 func (t BranchingType) channels() ChannelSet {
 	ans := make([]Channel, 0, 0)
-	for _, v := range t.branches {
+	for _, v := range t.Branches {
 		ans = append(ans, v.channels()...)
 	}
-	return append(ans, t.prefix.channel)
+	return append(ans, t.BranchPrefix.PChannel)
 }
 
 func (t BranchingType) Prefixes() [][]Prefix {
-	base := append(make([]Prefix, 0, 1), t.prefix)
+	base := append(make([]Prefix, 0, 1), t.BranchPrefix)
 	ans := make([][]Prefix, 0, 1)
-	for _, branch := range t.branches {
+	for _, branch := range t.Branches {
 		branches := branch.Prefixes()
 		for _, branch := range branches {
 			ans = append(ans, append(base, branch...))
@@ -358,7 +331,7 @@ func (t BranchingType) Prefixes() [][]Prefix {
 }
 
 func (t BranchingType) isWellFormed() bool {
-	for _, value := range t.branches {
+	for _, value := range t.Branches {
 		if !value.isWellFormed() {
 			return false
 		}
@@ -366,18 +339,18 @@ func (t BranchingType) isWellFormed() bool {
 	return true
 }
 
-func (t BranchingType) participants() []Participant {
-	ans := t.prefix.participants()
-	for _, val := range t.branches {
+func (b BranchingType) participants() []Participant {
+	ans := b.BranchPrefix.participants()
+	for _, val := range b.Branches {
 		ans = append(ans, val.participants()...)
 	}
 	return ans
 }
 
-func (t BranchingType) project(p Participant) (LocalType, error) {
+func (b BranchingType) project(p Participant) (LocalType, error) {
 	branches := make(map[string]LocalType)
 
-	for key, value := range t.branches {
+	for key, value := range b.Branches {
 		candidate, err := value.project(p)
 		if err != nil {
 			return nil, err
@@ -402,10 +375,10 @@ func (t BranchingType) project(p Participant) (LocalType, error) {
 		return true
 	}
 
-	if t.prefix.P1 == p {
-		return LocalSelectionType{Channel: t.prefix.channel, Branches: branches}, nil
-	} else if t.prefix.P2 == p {
-		return LocalBranchingType{Channel: t.prefix.channel, Branches: branches}, nil
+	if b.BranchPrefix.P1 == p {
+		return LocalSelectionType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
+	} else if b.BranchPrefix.P2 == p {
+		return LocalBranchingType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
 	} else if unique(branches) {
 		for _, branch := range branches {
 			return branch, nil
@@ -418,12 +391,12 @@ func (t BranchingType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case BranchingType:
 		gt := g.(BranchingType)
-		for x := range t.branches {
-			if !t.branches[x].equals(gt.branches[x]) {
+		for x := range t.Branches {
+			if !t.Branches[x].equals(gt.Branches[x]) {
 				return false
 			}
 		}
-		return t.prefix == gt.prefix
+		return t.BranchPrefix == gt.BranchPrefix
 	}
 	return false
 }
@@ -501,40 +474,35 @@ func (t NameType) equals(g GlobalType) bool {
 	return false
 }
 
-type RecursiveType struct {
-	bind NameType
-	body GlobalType
-}
-
 func (t RecursiveType) channels() ChannelSet {
-	return t.body.channels()
+	return t.Body.channels()
 }
 
 func (t RecursiveType) isWellFormed() bool {
-	return t.body.isWellFormed()
+	return t.Body.isWellFormed()
 }
 
 func (t RecursiveType) Prefixes() [][]Prefix {
-	return t.body.Prefixes()
+	return t.Body.Prefixes()
 }
 
 func (t RecursiveType) participants() []Participant {
-	return t.body.participants()
+	return t.Body.participants()
 }
 
 func (t RecursiveType) project(p Participant) (LocalType, error) {
-	body, err := t.body.project(p)
+	body, err := t.Body.project(p)
 	if err != nil {
 		return nil, err
 	}
-	return LocalRecursiveType{Bind: LocalNameType(t.bind), Body: body}, nil
+	return LocalRecursiveType{Bind: LocalNameType(t.Bind), Body: body}, nil
 }
 
 func (t RecursiveType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case RecursiveType:
 		gt := g.(RecursiveType)
-		return t.bind.equals(gt.bind) && t.body.equals(gt.body)
+		return t.Bind.equals(gt.Bind) && t.Body.equals(gt.Body)
 	}
 	return false
 }
@@ -593,7 +561,7 @@ func (n1 Prefix) II(n2 Prefix) bool {
 		fmt.Printf("DEP: II doesn't hold. expects equal P2 among %+v and %+v\n", n1, n2)
 		return false
 	}
-	if n1.channel != n2.channel && n1.P1 != n2.P1 {
+	if n1.PChannel != n2.PChannel && n1.P1 != n2.P1 {
 		//second if condition given on the tech report.
 		return true
 	}
@@ -607,7 +575,7 @@ func (n1 Prefix) IO(n2 Prefix) bool {
 		fmt.Printf("DEP: IO doesn't hold. expects shared participant among %+v and %+v.\n", n1, n2)
 		return false
 	}
-	if n1.channel == n2.channel {
+	if n1.PChannel == n2.PChannel {
 		fmt.Printf("DEP: IO doesn't hold. expects different channels on n1P1 and n2P2 for %+v and %+v\n", n1, n2)
 		return false
 	}
@@ -619,7 +587,7 @@ func (n1 Prefix) OO(n2 Prefix) bool {
 		fmt.Printf("DEP: OO doesn't hold. expects same P1 among %+v and %+v.\n", n1, n2)
 		return false
 	}
-	if n1.channel != n2.channel && n1.P2 != n2.P2 {
+	if n1.PChannel != n2.PChannel && n1.P2 != n2.P2 {
 		//extra if confition derived from tech report.
 		//OO holds subject to p1 \neq p2 => k1 \neq k2,
 		// for pfx(n1) = p -> p1: k1 and pfx(n2) = p -> p2 : k2
@@ -633,7 +601,7 @@ func (n1 Prefix) OO(n2 Prefix) bool {
 func filter_shared_channel(lessthan []Prefix, filter Prefix) []Prefix {
 	ans := make([]Prefix, 0, 0)
 	for _, prefix := range lessthan {
-		if prefix.channel == filter.channel { //&& prefix != filter{
+		if prefix.PChannel == filter.PChannel { //&& prefix != filter{
 			ans = append(ans, prefix)
 		}
 	}
@@ -650,21 +618,22 @@ func linearInternal(gt GlobalType, lessthan []Prefix) bool {
 	switch gt.(type) {
 	case ValueType:
 		t := gt.(ValueType)
-		filtered_lessthan := filter_shared_channel(lessthan, t.prefix)
-		if !(InputDependency(filtered_lessthan, t.prefix) && OutputDependency(filtered_lessthan, t.prefix)) {
+		filtered_lessthan := filter_shared_channel(lessthan, t.ValuePrefix)
+		if !(InputDependency(filtered_lessthan, t.ValuePrefix) && OutputDependency(filtered_lessthan, t.ValuePrefix)) {
 			fmt.Printf("ERROR: Failed to collect dependencies for ValueType %+v\n", t)
 			return false
 		}
-		linearInternal(t.next, append(lessthan, t.prefix))
+		linearInternal(t.ValueNext, append(lessthan, t.ValuePrefix))
 	case BranchingType:
 		t := gt.(BranchingType)
-		filtered_lessthan := filter_shared_channel(lessthan, t.prefix)
-		if !(InputDependency(filtered_lessthan, t.prefix) && OutputDependency(filtered_lessthan, t.prefix)) {
+		filtered_lessthan := filter_shared_channel(lessthan, t.BranchPrefix)
+		if !(InputDependency(filtered_lessthan, t.BranchPrefix) &&
+			OutputDependency(filtered_lessthan, t.BranchPrefix)) {
 			fmt.Printf("ERROR: Failed to collect dependencies for BranchingType %+v\n", t)
 			return false
 		}
-		new_lessthan := append(lessthan, t.prefix)
-		for _, value := range t.branches {
+		new_lessthan := append(lessthan, t.BranchPrefix)
+		for _, value := range t.Branches {
 			if !linearInternal(value, new_lessthan) {
 				return false
 			}
@@ -685,7 +654,7 @@ func linearInternal(gt GlobalType, lessthan []Prefix) bool {
 	case RecursiveType:
 		t := gt.(RecursiveType)
 		//fmt.Printf("DEBUG: Entering body of type %+v\n", t)
-		return linearInternal(t.body, lessthan)
+		return linearInternal(t.Body, lessthan)
 	case NameType:
 	case EndType:
 	}
@@ -726,34 +695,34 @@ func unfold(gt GlobalType, env map[NameType]GlobalType) GlobalType {
 	switch gt.(type) {
 	case ValueType:
 		t := gt.(ValueType)
-		return ValueType{prefix: t.prefix, value: t.value, next: unfold(t.next, env)}
+		return ValueType{ValuePrefix: t.ValuePrefix, Value: t.Value, ValueNext: unfold(t.ValueNext, env)}
 	case BranchingType:
 		t := gt.(BranchingType)
 		branches := make(map[string]GlobalType)
-		for key, value := range t.branches {
+		for key, value := range t.Branches {
 			branches[key] = unfold(value, env)
 		}
-		return BranchingType{prefix: t.prefix, branches: branches}
+		return BranchingType{BranchPrefix: t.BranchPrefix, Branches: branches}
 	case ParallelType:
 		t := gt.(ParallelType)
 		return ParallelType{a: unfold(t.a, env), b: unfold(t.b, env)}
 	case RecursiveType:
 		t := gt.(RecursiveType)
-		if val, ok := env[t.bind]; ok {
+		if val, ok := env[t.Bind]; ok {
 			if val != t {
 				//name hiding!
 				old_val := val
-				env[t.bind] = t
-				ans := RecursiveType{bind: t.bind, body: unfold(t.body, env)}
-				env[t.bind] = old_val
+				env[t.Bind] = t
+				ans := RecursiveType{Bind: t.Bind, Body: unfold(t.Body, env)}
+				env[t.Bind] = old_val
 				return ans
 			} else {
 				//I already unfolded once. then return (avoid infinite loop)
 				return t
 			}
 		}
-		env[t.bind] = t
-		return RecursiveType{bind: t.bind, body: unfold(t.body, env)}
+		env[t.Bind] = t
+		return RecursiveType{Bind: t.Bind, Body: unfold(t.Body, env)}
 	case NameType:
 		t := gt.(NameType)
 		if val, ok := env[t]; ok {
@@ -1228,491 +1197,6 @@ func (e Exp) typecheck() Sort {
 }
 
 type LocalName string
-
-/*
-// Structs that shall be a program
-
-type RequestSession struct {
-	//\bar{a}[2..n](\~s).P is a program and a is a globaltype.  The participants set
-	// contains all participants "but the leader" (or starter, which
-	// these guys name 1. crystal clear (not).
-	participants []Participant
-	a            string // should be a name
-	s            ChannelSet
-	P            Program
-}
-
-func (rs RequestSession) typecheck(names SortingNames, vars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	//rule [Mcast] in fig 7
-	//first, the easy part: to check that 2..n is actually all the participants in the set but one.
-	type_participants := gts[rs.a].participants()
-	if count(rs.participants) != count(type_participants) {
-		return nil, errors.New("Malformed RequestSession : [2..n] is not participants(G)-1")
-	}
-	for _, p := range rs.participants {
-		if !contains(p, type_participants) {
-			return nil, errors.New(fmt.Sprintf("Malformed RequestSession: participant %v does not participate in global type %+v", p, gts[rs.a]))
-		}
-	}
-	//now find actual leader projection
-	var participant Participant
-	for _, participant = range type_participants {
-		if !contains(participant, rs.participants) {
-			break
-		}
-	}
-
-	typing, err := rs.P.typecheck(names, vars, gts)
-	if err != nil {
-		return nil, err
-	}
-	if projections, ok := typing.find(rs.s); ok {
-		if rs.s.uniquify().Len() != gts[rs.a].channels().uniquify().Len() {
-			return nil, errors.New("MCast Inconsistency on size of channels in s and G. Should be equal.")
-		}
-		if actual, err := gts[rs.a].project(participant); err == nil {
-			if projection, err := findProjection(participant, projections); err == nil {
-				if !projection.Equals(actual) {
-					return nil, errors.New(fmt.Sprintf("Projection is different from what was in the Typing of projections!, in particular, %+v != %+v", projection, actual))
-				}
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-		//Note the end of the rule: it removes an element from Delta!
-		return typing.remove(rs.s), nil
-	}
-	return nil, errors.New("The typing did not contain the set of channels defined in MCast")
-}
-
-type AcceptSession struct {
-	//a[p](\~s).P
-	a string //which should be a name :)
-	p Participant
-	s ChannelSet
-	P Program
-}
-
-func (rs AcceptSession) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	//rule [Macc] in fig 7
-	// quite similar to [Mcast]
-	//now find actual leader projection
-
-	participant := rs.p
-
-	typing, err := rs.P.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return nil, err
-	}
-	if projections, ok := typing.find(rs.s); ok {
-		if rs.s.uniquify().Len() != gts[rs.a].channels().uniquify().Len() {
-			return nil, errors.New("MCast Inconsistency on size of channels in s and G. Should be equal.")
-		}
-		if actual, err := gts[rs.a].project(participant); err == nil {
-			if projection, err := findProjection(participant, projections); err == nil {
-				if !projection.Equals(actual) {
-					return nil, errors.New(fmt.Sprintf("Projection is different from what was in the Typing of projections!, in particular, %+v != %+v", projection, actual))
-				}
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-		//Note the end of the rule: it removes an element from Delta!
-		return typing.remove(rs.s), nil
-	}
-	return nil, errors.New("The typing did not contain the set of channels defined in MCast")
-}
-
-type SendValue struct {
-	//s_k!<\~e>;P
-	s           ChannelSet
-	k           Channel
-	expressions []Exp
-	P           Program
-}
-
-func (sv SendValue) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [Send]
-	P, err := sv.P.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return nil, err
-	}
-
-	expSorts := make([]Sort, len(sv.expressions), len(sv.expressions))
-
-	for x, v := range sv.expressions {
-		expSorts[x] = v.typecheck()
-	}
-
-	channelsType, found := P.find(sv.s)
-	if !found {
-		return nil, errors.New("Didn't found a typing for the channels in the system.")
-	}
-
-	if len(channelsType) != 1 {
-		return nil, errors.New("Channels Type in Send is not a singleton.")
-	}
-
-	panic("TODO! Fix Felipe's checking code for single sorts")
-	//return P.add(sv.s, append(make([]ProjectionType, 0, 1),
-	//ProjectionType{participant: channelsType[0].participant, T: LocalSendType{Channel: sv.k, Value: expSorts, Next: channelsType[0].T}})), nil
-}
-
-type ReceiveValue struct {
-	//s_k?(\~x);P
-	s     ChannelSet
-	k     Channel
-	names []string //\~x
-	types Sort
-	P     Program
-}
-
-func (rv ReceiveValue) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [Rcv]
-	P, err := rv.P.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return nil, err
-	}
-
-	for x, v := range rv.names {
-		envNames[v] = SingletonValue(rv.types[x])
-	}
-
-	channelsType, found := P.find(rv.s)
-	if !found {
-		return nil, errors.New("Didn't found a typing for the channels in the system.")
-	}
-
-	if len(channelsType) != 1 {
-		return nil, errors.New("Channels Type in Send is not a singleton.")
-	}
-
-	for _, v := range rv.names {
-		delete(envNames, v)
-	}
-
-	return P.add(rv.s, append(make([]ProjectionType, 0, 1),
-		ProjectionType{participant: channelsType[0].participant, T: LocalReceiveType{Channel: rv.k, Value: rv.types, Next: channelsType[0].T}})), nil
-}
-
-// We do not consider [Deleg] nor [SRec, because we do not want to send session types through channels (yet).
-
-type SelectLabel struct {
-	//s_k <| l; P
-	channel Channel //k
-	label   string
-	T       LocalSelectionType //This is to ease typing.
-	P       Program
-}
-
-func (sl SelectLabel) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [SelectLabel]
-	// This implementation needs a notion of subtyping that
-	P, err := sl.P.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return nil, err
-	}
-	// This is how I should fix all the rest of the rules to do linear
-	// addition to the content. I will have to fix this to make the
-	// multiparty implementation work, but since it is not the goal of
-	// this project, I will simply leave this as future work.
-
-	// Get the last definition.
-
-	var lastTyping TypingPair
-
-	switch P.(type) {
-	case EmptyTyping:
-		return nil, errors.New("Missing a typing in P for selection")
-	case TypingPair:
-		lastTyping = P.(TypingPair)
-	}
-
-	if len(lastTyping.values) != 1 {
-		return nil, errors.New("Too many typings for selection's next Process")
-	}
-
-	if !lastTyping.values[0].Equals(sl.T.Branches[sl.label]) {
-		return nil, errors.New("Type of the branch not equal to the type required for the continuing process on selection")
-	}
-	return TypingPair{key: lastTyping.key, values: append(make([]ProjectionType, 0, 1), ProjectionType{T: sl.T, participant: lastTyping.values[0].participant}), next: lastTyping.next}, nil
-}
-
-type BranchLabel struct {
-	// s |> {li : Pi} i \in I
-	channel  Channel //s
-	branches map[string]Program
-}
-
-func (bl BranchLabel) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-
-	typings := make(map[string]LocalType)
-
-	participant := make([]Participant, 0, 1)
-
-	channels := make([][]Channel, 0, 1)
-
-	rest := make([]Typing, 0, 1)
-	for label, program := range bl.branches {
-		typing, err := program.typecheck(envNames, envVars, gts)
-		if err != nil {
-			return nil, err
-		}
-		pair := typing.(TypingPair)
-
-		if len(pair.values) != 1 {
-			return nil, errors.New("More than one projectiontype for a branch")
-		}
-		if len(participant) < 1 {
-			participant = append(participant, pair.values[0].participant)
-			channels = append(channels, pair.key)
-			rest = append(rest, pair.next)
-		} else if participant[0] != pair.values[0].participant {
-			return nil, errors.New("Different Participants in branch projections. weird.")
-		}
-
-		typings[label] = pair.values[0].T
-	}
-
-	return TypingPair{key: checker.Channels[0], values: append(make([]ProjectionType, 0, 1),
-		ProjectionType{T: LocalBranchingType{Channel: bl.channel,
-			Branches: typings}, participant: participant[0]}), next: rest[0]}, nil
-
-}
-
-type Conditional struct {
-	//if e then P else Q
-	E    Exp
-	Then Program
-	Else Program
-}
-
-func (c Conditional) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	//Rule [If]
-	if c.E.typecheck() != "bool" {
-		return nil, errors.New(fmt.Sprintf("Conditional without boolean condition had instead %s", c.E))
-	}
-	typingThen, err := c.Then.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return typingThen, err
-	}
-
-	typingElse, err := c.Else.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return typingElse, err
-	}
-
-	// rest of method just checks equality of typings
-
-	domainThen := typingThen.domain()
-	domainElse := typingElse.domain()
-	if len(domainThen) != len(domainElse) {
-		return nil, errors.New("Domains of Branch Typings in Conditional are of different size")
-	}
-	// This has a huge overhead, but can be optimized after having a working version.
-
-	for _, dom := range domainThen {
-		domThen, ok := typingThen.find(dom)
-		domElse, ok := typingElse.find(dom)
-		if !ok {
-			return nil, errors.New("Domain mismatch in conditional.")
-		}
-
-		if len(domElse) != len(domThen) {
-			return nil, errors.New("Domain mismatch in conditional. different codomains..")
-		}
-		for x := range domThen {
-			if !domThen[x].Equals(domElse[x]) {
-				return nil, errors.New("Domain mismatch in conditional. different codomains.")
-			}
-		}
-	}
-
-	for _, dom := range domainElse {
-		domElse, ok := typingElse.find(dom)
-		domThen, ok := typingThen.find(dom)
-		if !ok {
-			return nil, errors.New("Domain mismatch in conditional.")
-		}
-
-		if len(domElse) != len(domThen) {
-			return nil, errors.New("Domain mismatch in conditional. different codomains..")
-		}
-		for x := range domThen {
-			if !domThen[x].Equals(domElse[x]) {
-				return nil, errors.New("Domain mismatch in conditional. different codomains.")
-			}
-		}
-	}
-
-	return typingThen, err
-}
-
-type Parallel struct {
-	P Program
-	Q Program
-}
-
-func (p Parallel) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [Conc]
-	typingP, err := p.P.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return typingP, err
-	}
-	typingQ, err := p.Q.typecheck(envNames, envVars, gts)
-	if err != nil {
-		return typingQ, err
-	}
-	if !compatible(typingP, typingQ) {
-		return nil, errors.New("Typings of parallel branches are not compatible")
-	}
-	return composition(typingP, typingQ), nil
-}
-
-type Inaction struct {
-	//0
-}
-
-func (i Inaction) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [Inact]
-	return EmptyTyping{}, nil
-}
-
-type Hiding struct {
-	//(\eta n) P
-	n string     // name to hide :)
-	G GlobalType // type to hide :)
-	P Program
-}
-
-func (h Hiding) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [NRes]
-	//This is a key difference from the paper.
-	val, ok := gts[h.n]
-	gts[h.n] = h.G
-	ans, err := h.P.typecheck(envNames, envVars, gts)
-	if ok {
-		gts[h.n] = val
-	} else {
-		delete(gts, h.n)
-	}
-	return ans, err
-}
-
-type VarDef struct {
-	//def X(~x~s1...~sn) in P, but I add the sorts. Why? Because the
-	//type system is specification oriented and not implementation
-	//oriented and I am not going to nondeterministically choose the
-	//correct set of sorts that I need to add for each variable.
-
-	// We make a variant which is type annotated. Easier to typecheck.
-
-	//def X:typevar (\~x,\~s1...\~sn) = P in Q
-
-	identifier string          //X
-	argvars    []string        //\~x
-	argtypes   []Sort          //types for \~x. Not on the original spec, but to simplify typing.
-	pv         ProcessVariable //Type for X
-	s          []ChannelSet
-	P, Q       Program
-}
-
-func (vd VarDef) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	// Rule [Def]
-	original_sorting_variable, sorting_variable_was_set := envVars[vd.identifier]
-
-	//first extend envVars with the type for X
-	envVars[vd.identifier] = vd.pv
-
-	//Type Q (second premise of [Def])
-	Q, err := vd.Q.typecheck(envNames, envVars, gts)
-
-	for x := range vd.argvars {
-		envNames[vd.argvars[x]] = vd.argtypes[x]
-	}
-
-	P, err := vd.P.typecheck(envNames, envVars, gts)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Now we have checked all the predicates in the premises, we can go
-	// and check validity of the typing in the definition of P with the
-	// sorts defined in the definition of X.
-
-	for k, s := range vd.s {
-		//For each sortset verify that there is an actual typing in the
-		//consequence. There is no restriction about it in the spec, but
-		//it must exist.
-
-		_, found := P.find(s)
-
-		if !found {
-			return nil, errors.New(fmt.Sprintf("Definition's P does not generate a typing for sortset %v (%+v)", k, s))
-		}
-	}
-
-	//Cleanup for iterative maps.
-	for _, x := range vd.argvars {
-		delete(envNames, x)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if sorting_variable_was_set {
-		envVars[vd.identifier] = original_sorting_variable
-	} else {
-		delete(envVars, vd.identifier)
-	}
-
-	//Now if everything went well, return exactly the typing for Q.
-
-	return Q, nil
-}
-
-type CallProcess struct {
-	//X<\~e,\~s>
-	identifier  string       //X
-	expressions []Exp        //~e
-	channelSets []ChannelSet //~s
-}
-
-func (cp CallProcess) typecheck(envNames SortingNames, envVars SortingVariables, gts GlobalTypeEnv) (Typing, error) {
-	//Rule [Var]
-	// premise
-	var sorts SortSet
-	sorts = make([]Sort, len(cp.expressions), len(cp.expressions))
-	for x, exp := range cp.expressions {
-		sorts[x] = exp.typecheck()
-	}
-	var envVal ProcessVariable
-	var ok bool
-	if envVal, ok = envVars[cp.identifier]; !ok {
-		return nil, errors.New("Calling a process identifier that is not in scope.")
-	}
-	sort.Sort(sorts)
-	if !equals(sorts, envVal.sorts) {
-		return nil, errors.New("Sort of expressions different from process variable's sorts in environment.")
-	}
-	if len(cp.channelSets) != len(envVal.types) {
-		return nil, errors.New("Not enough types in process variable to generate the typing. (or too many!)")
-	}
-	var ans Typing
-	ans = EmptyTyping{}
-
-	for x := range cp.channelSets {
-		ans = ans.add(cp.channelSets[x], append(make([]ProjectionType, 0, 1), envVal.types[x]))
-	}
-
-	return ans, nil
-} */
 
 func main() {
 	t := LocalSendType{}
