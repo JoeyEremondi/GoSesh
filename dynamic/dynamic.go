@@ -10,7 +10,7 @@ import (
 )
 
 //TODO include in constructor library?
-type Channel multiparty.Channel
+type Participant multiparty.Participant
 
 //Store the "current" type in the computation
 //so that we can ensure each network operation preserves its
@@ -18,7 +18,6 @@ type Checker struct {
 	gv           *govec.GoLog
 	currentType  multiparty.LocalType
 	currentLabel *string
-	Channels     map[string]*net.Conn
 	//TODO other stuff handy to have here?
 }
 
@@ -153,22 +152,22 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 	panic(err)
 }
 
-func (checker *Checker) Read(c Channel, read func(Channel, []byte) (int, error), b []byte) (int, error) {
+func (checker *Checker) Read(c Participant, read func(Participant, []byte) (int, error), b []byte) (int, error) {
 	curriedRead := func([]byte) (int, error) { return read(c, b) }
 	return capture.Read(curriedRead, b)
 }
 
-func (checker *Checker) Write(c Channel, write func(c Channel, b []byte) (int, error), b []byte) (int, error) {
+func (checker *Checker) Write(c Participant, write func(c Participant, b []byte) (int, error), b []byte) (int, error) {
 	curriedWrite := func(b []byte) (int, error) { return write(c, b) }
 	return capture.Write(curriedWrite, b)
 }
 
-func (checker *Checker) ReadFrom(c Channel, readFrom func(Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
+func (checker *Checker) ReadFrom(c Participant, readFrom func(Participant, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
 	curriedRead := func(b []byte) (int, net.Addr, error) { return readFrom(c, b) }
 	return capture.ReadFrom(curriedRead, b)
 }
 
-func (checker *Checker) WriteTo(c Channel, writeTo func(Channel, []byte, net.Addr) (int, error), b []byte, addrMaker func(Channel) net.Addr) (int, error) {
+func (checker *Checker) WriteTo(c Participant, writeTo func(Participant, []byte, net.Addr) (int, error), b []byte, addrMaker func(Participant) net.Addr) (int, error) {
 	curriedWrite := func(b []byte, a net.Addr) (int, error) { return writeTo(c, b, a) }
 	return capture.WriteTo(curriedWrite, b, addrMaker(c))
 }
