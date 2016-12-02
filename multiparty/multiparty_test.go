@@ -4,6 +4,8 @@ import (
 	"go/format"
 	"os"
 	"testing"
+
+	"github.com/JoeyEremondi/GoSesh/multiparty"
 )
 
 //
@@ -136,17 +138,17 @@ import (
 
 func TestBasicStub(test *testing.T) {
 
-	ourMap := map[string]GlobalType{
-		"isGood": EndType{},
-		"isBad":  NameType("T"),
+	ourMap := map[string]multiparty.GlobalType{
+		"isGood": multiparty.EndType{},
+		"isBad":  multiparty.NameType("T"),
 	}
 
-	t := RecursiveType{
-		bind: "T",
-		body: ValueType{
-			ValuePrefix: Prefix{P1: "foo", P2: "bar", PChannel: "channel"},
+	t := multiparty.RecursiveType{
+		Bind: "T",
+		Body: multiparty.ValueType{
+			ValuePrefix: multiparty.Prefix{P1: "foo", P2: "bar", PChannel: "channel"},
 			Value:       "int",
-			ValueNext:   BranchingType{BranchPrefix: Prefix{P1: "bar", P2: "foo", PChannel: "channel2"}, Branches: ourMap},
+			ValueNext:   multiparty.BranchingType{BranchPrefix: multiparty.Prefix{P1: "bar", P2: "foo", PChannel: "channel2"}, Branches: ourMap},
 		}}
 	println("*******************\n\n\n ")
 	outFile, err := os.Create("test.go.out")

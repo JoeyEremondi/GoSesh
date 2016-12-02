@@ -40,6 +40,11 @@ type BranchingType struct {
 	Branches     map[string]GlobalType
 }
 
+type RecursiveType struct {
+	Bind NameType
+	Body GlobalType
+}
+
 //Generate the program with all the stubs for a global type
 func program(t GlobalType) string {
 
@@ -482,40 +487,35 @@ func (t NameType) equals(g GlobalType) bool {
 	return false
 }
 
-type RecursiveType struct {
-	bind NameType
-	body GlobalType
-}
-
 func (t RecursiveType) channels() ChannelSet {
-	return t.body.channels()
+	return t.Body.channels()
 }
 
 func (t RecursiveType) isWellFormed() bool {
-	return t.body.isWellFormed()
+	return t.Body.isWellFormed()
 }
 
 func (t RecursiveType) Prefixes() [][]Prefix {
-	return t.body.Prefixes()
+	return t.Body.Prefixes()
 }
 
 func (t RecursiveType) participants() []Participant {
-	return t.body.participants()
+	return t.Body.participants()
 }
 
 func (t RecursiveType) project(p Participant) (LocalType, error) {
-	body, err := t.body.project(p)
+	body, err := t.Body.project(p)
 	if err != nil {
 		return nil, err
 	}
-	return LocalRecursiveType{Bind: LocalNameType(t.bind), Body: body}, nil
+	return LocalRecursiveType{Bind: LocalNameType(t.Bind), Body: body}, nil
 }
 
 func (t RecursiveType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case RecursiveType:
 		gt := g.(RecursiveType)
-		return t.bind.equals(gt.bind) && t.body.equals(gt.body)
+		return t.Bind.equals(gt.Bind) && t.Body.equals(gt.Body)
 	}
 	return false
 }
@@ -667,7 +667,7 @@ func linearInternal(gt GlobalType, lessthan []Prefix) bool {
 	case RecursiveType:
 		t := gt.(RecursiveType)
 		//fmt.Printf("DEBUG: Entering body of type %+v\n", t)
-		return linearInternal(t.body, lessthan)
+		return linearInternal(t.Body, lessthan)
 	case NameType:
 	case EndType:
 	}
@@ -721,21 +721,21 @@ func unfold(gt GlobalType, env map[NameType]GlobalType) GlobalType {
 		return ParallelType{a: unfold(t.a, env), b: unfold(t.b, env)}
 	case RecursiveType:
 		t := gt.(RecursiveType)
-		if val, ok := env[t.bind]; ok {
+		if val, ok := env[t.Bind]; ok {
 			if val != t {
 				//name hiding!
 				old_val := val
-				env[t.bind] = t
-				ans := RecursiveType{bind: t.bind, body: unfold(t.body, env)}
-				env[t.bind] = old_val
+				env[t.Bind] = t
+				ans := RecursiveType{Bind: t.Bind, Body: unfold(t.Body, env)}
+				env[t.Bind] = old_val
 				return ans
 			} else {
 				//I already unfolded once. then return (avoid infinite loop)
 				return t
 			}
 		}
-		env[t.bind] = t
-		return RecursiveType{bind: t.bind, body: unfold(t.body, env)}
+		env[t.Bind] = t
+		return RecursiveType{Bind: t.Bind, Body: unfold(t.Body, env)}
 	case NameType:
 		t := gt.(NameType)
 		if val, ok := env[t]; ok {
