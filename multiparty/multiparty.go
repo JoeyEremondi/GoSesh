@@ -79,8 +79,18 @@ if argsWithoutProg[1] == "--%s"{
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
 	var checker dynamic.Checker
-	addrMap := make(map[dynamic.Participant]*net.Addr)
-	addrMaker := func(c dynamic.Participant)net.Addr{return *addrMap[c]}
+	addrMap := make(map[dynamic.Participant]net.Addr)
+	addrMaker := func(p dynamic.Participant)net.Addr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", p.String())
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
 	readFun := makeChannelReader(&addrMap)
 	writeFun := makeChannelWriter(&addrMap)
 	%s
@@ -96,17 +106,19 @@ import (
 
 )
 
+
 //Higher order function: takes in a (possibly empty) map of addresses for channels
 //Then returns the function which looks up the address for that channel (if it exists)
 //And does the write
-func makeChannelWriter(addrMap *map[dynamic.Participant]*net.Addr)(func(dynamic.Participant, []byte, net.Addr) (int, error)){
-	return func(c dynamic.Participant, b []byte, addr net.Addr) (int, error){
-		panic("TODO!")
+func makeChannelWriter(addrMap *map[dynamic.Participant]net.Addr)(func(dynamic.Participant, []byte, net.Addr) (int, error)){
+	return func(p dynamic.Participant, b []byte, addr net.Addr) (int, error){
+		panic("TODO")
+
 	}
 }
 
-func makeChannelReader(addrMap *map[dynamic.Participant]*net.Addr)(func(dynamic.Participant, []byte) (int, net.Addr, error)){
-	return func(c dynamic.Participant, b []byte) (int, net.Addr, error){
+func makeChannelReader(addrMap *map[dynamic.Participant]net.Addr)(func(dynamic.Participant, []byte) (int, net.Addr, error)){
+	return func(p dynamic.Participant, b []byte) (int, net.Addr, error){
 		panic("TODO!")
 	}
 }

@@ -12,6 +12,10 @@ import (
 //TODO include in constructor library?
 type Participant multiparty.Participant
 
+func (p Participant) String() string {
+	return string(p)
+}
+
 //Store the "current" type in the computation
 //so that we can ensure each network operation preserves its
 type Checker struct {
