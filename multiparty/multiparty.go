@@ -24,6 +24,22 @@ type GlobalType interface {
 
 type Participant string
 
+type Prefix struct {
+	P1, P2   Participant
+	PChannel Channel
+}
+
+type ValueType struct {
+	ValuePrefix Prefix
+	Value       Sort
+	ValueNext   GlobalType
+}
+
+type BranchingType struct {
+	BranchPrefix Prefix
+	Branches     map[string]GlobalType
+}
+
 //Generate the program with all the stubs for a global type
 func program(t GlobalType) string {
 
@@ -232,22 +248,11 @@ func (a ChannelSet) disjoint(b ChannelSet) bool {
 	return true
 }
 
-type Prefix struct {
-	P1, P2  Participant
-	channel Channel
-}
-
 func (p Prefix) participants() []Participant {
 	ans := make([]Participant, 2, 2)
 	ans[0] = p.P1
 	ans[1] = p.P2
 	return ans
-}
-
-type ValueType struct {
-	prefix Prefix
-	value  Sort
-	next   GlobalType
 }
 
 func SingletonValue(s Sort) []Sort {
@@ -272,30 +277,30 @@ func equals(a, b SortSet) bool {
 }*/
 
 func (t ValueType) isWellFormed() bool {
-	return t.next.isWellFormed()
+	return t.ValueNext.isWellFormed()
 }
 
 func (t ValueType) Prefixes() [][]Prefix {
-	current := append(make([]Prefix, 0, 1), t.prefix)
+	current := append(make([]Prefix, 0, 1), t.ValuePrefix)
 	ans := append(make([][]Prefix, 0, 1), current)
-	for _, prefix := range t.next.Prefixes() {
+	for _, prefix := range t.ValueNext.Prefixes() {
 		ans = append(ans, append(current, prefix...))
 	}
 	return ans
 }
 
 func (t ValueType) participants() []Participant {
-	return append(t.prefix.participants(), t.next.participants()...)
+	return append(t.ValuePrefix.participants(), t.ValueNext.participants()...)
 }
 
 func (t ValueType) project(p Participant) (LocalType, error) {
-	ans, err := t.next.project(p)
+	ans, err := t.ValueNext.project(p)
 	if err != nil {
 		return nil, err
-	} else if t.prefix.P1 == p {
-		ans = LocalSendType{Channel: t.prefix.channel, Value: t.value, Next: ans}
-	} else if t.prefix.P2 == p {
-		ans = LocalReceiveType{Channel: t.prefix.channel, Value: t.value, Next: ans}
+	} else if t.ValuePrefix.P1 == p {
+		ans = LocalSendType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
+	} else if t.ValuePrefix.P2 == p {
+		ans = LocalReceiveType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
 	}
 	return ans, err
 }
@@ -304,32 +309,27 @@ func (t ValueType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case ValueType:
 		gt := g.(ValueType)
-		return gt.prefix == t.prefix && (gt.value == t.value) && t.next.equals(gt.next)
+		return gt.ValuePrefix == t.ValuePrefix && (gt.Value == t.Value) && t.ValueNext.equals(gt.ValueNext)
 	}
 	return false
 }
 
 func (t ValueType) channels() ChannelSet {
-	return append(t.next.channels(), t.prefix.channel)
-}
-
-type BranchingType struct {
-	prefix   Prefix
-	branches map[string]GlobalType
+	return append(t.ValueNext.channels(), t.ValuePrefix.PChannel)
 }
 
 func (t BranchingType) channels() ChannelSet {
 	ans := make([]Channel, 0, 0)
-	for _, v := range t.branches {
+	for _, v := range t.Branches {
 		ans = append(ans, v.channels()...)
 	}
-	return append(ans, t.prefix.channel)
+	return append(ans, t.BranchPrefix.PChannel)
 }
 
 func (t BranchingType) Prefixes() [][]Prefix {
-	base := append(make([]Prefix, 0, 1), t.prefix)
+	base := append(make([]Prefix, 0, 1), t.BranchPrefix)
 	ans := make([][]Prefix, 0, 1)
-	for _, branch := range t.branches {
+	for _, branch := range t.Branches {
 		branches := branch.Prefixes()
 		for _, branch := range branches {
 			ans = append(ans, append(base, branch...))
@@ -339,7 +339,7 @@ func (t BranchingType) Prefixes() [][]Prefix {
 }
 
 func (t BranchingType) isWellFormed() bool {
-	for _, value := range t.branches {
+	for _, value := range t.Branches {
 		if !value.isWellFormed() {
 			return false
 		}
@@ -347,18 +347,18 @@ func (t BranchingType) isWellFormed() bool {
 	return true
 }
 
-func (t BranchingType) participants() []Participant {
-	ans := t.prefix.participants()
-	for _, val := range t.branches {
+func (b BranchingType) participants() []Participant {
+	ans := b.BranchPrefix.participants()
+	for _, val := range b.Branches {
 		ans = append(ans, val.participants()...)
 	}
 	return ans
 }
 
-func (t BranchingType) project(p Participant) (LocalType, error) {
+func (b BranchingType) project(p Participant) (LocalType, error) {
 	branches := make(map[string]LocalType)
 
-	for key, value := range t.branches {
+	for key, value := range b.Branches {
 		candidate, err := value.project(p)
 		if err != nil {
 			return nil, err
@@ -383,10 +383,10 @@ func (t BranchingType) project(p Participant) (LocalType, error) {
 		return true
 	}
 
-	if t.prefix.P1 == p {
-		return LocalSelectionType{Channel: t.prefix.channel, Branches: branches}, nil
-	} else if t.prefix.P2 == p {
-		return LocalBranchingType{Channel: t.prefix.channel, Branches: branches}, nil
+	if b.BranchPrefix.P1 == p {
+		return LocalSelectionType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
+	} else if b.BranchPrefix.P2 == p {
+		return LocalBranchingType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
 	} else if unique(branches) {
 		for _, branch := range branches {
 			return branch, nil
@@ -399,12 +399,12 @@ func (t BranchingType) equals(g GlobalType) bool {
 	switch g.(type) {
 	case BranchingType:
 		gt := g.(BranchingType)
-		for x := range t.branches {
-			if !t.branches[x].equals(gt.branches[x]) {
+		for x := range t.Branches {
+			if !t.Branches[x].equals(gt.Branches[x]) {
 				return false
 			}
 		}
-		return t.prefix == gt.prefix
+		return t.BranchPrefix == gt.BranchPrefix
 	}
 	return false
 }
@@ -574,7 +574,7 @@ func (n1 Prefix) II(n2 Prefix) bool {
 		fmt.Printf("DEP: II doesn't hold. expects equal P2 among %+v and %+v\n", n1, n2)
 		return false
 	}
-	if n1.channel != n2.channel && n1.P1 != n2.P1 {
+	if n1.PChannel != n2.PChannel && n1.P1 != n2.P1 {
 		//second if condition given on the tech report.
 		return true
 	}
@@ -588,7 +588,7 @@ func (n1 Prefix) IO(n2 Prefix) bool {
 		fmt.Printf("DEP: IO doesn't hold. expects shared participant among %+v and %+v.\n", n1, n2)
 		return false
 	}
-	if n1.channel == n2.channel {
+	if n1.PChannel == n2.PChannel {
 		fmt.Printf("DEP: IO doesn't hold. expects different channels on n1P1 and n2P2 for %+v and %+v\n", n1, n2)
 		return false
 	}
@@ -600,7 +600,7 @@ func (n1 Prefix) OO(n2 Prefix) bool {
 		fmt.Printf("DEP: OO doesn't hold. expects same P1 among %+v and %+v.\n", n1, n2)
 		return false
 	}
-	if n1.channel != n2.channel && n1.P2 != n2.P2 {
+	if n1.PChannel != n2.PChannel && n1.P2 != n2.P2 {
 		//extra if confition derived from tech report.
 		//OO holds subject to p1 \neq p2 => k1 \neq k2,
 		// for pfx(n1) = p -> p1: k1 and pfx(n2) = p -> p2 : k2
@@ -614,7 +614,7 @@ func (n1 Prefix) OO(n2 Prefix) bool {
 func filter_shared_channel(lessthan []Prefix, filter Prefix) []Prefix {
 	ans := make([]Prefix, 0, 0)
 	for _, prefix := range lessthan {
-		if prefix.channel == filter.channel { //&& prefix != filter{
+		if prefix.PChannel == filter.PChannel { //&& prefix != filter{
 			ans = append(ans, prefix)
 		}
 	}
@@ -631,21 +631,22 @@ func linearInternal(gt GlobalType, lessthan []Prefix) bool {
 	switch gt.(type) {
 	case ValueType:
 		t := gt.(ValueType)
-		filtered_lessthan := filter_shared_channel(lessthan, t.prefix)
-		if !(InputDependency(filtered_lessthan, t.prefix) && OutputDependency(filtered_lessthan, t.prefix)) {
+		filtered_lessthan := filter_shared_channel(lessthan, t.ValuePrefix)
+		if !(InputDependency(filtered_lessthan, t.ValuePrefix) && OutputDependency(filtered_lessthan, t.ValuePrefix)) {
 			fmt.Printf("ERROR: Failed to collect dependencies for ValueType %+v\n", t)
 			return false
 		}
-		linearInternal(t.next, append(lessthan, t.prefix))
+		linearInternal(t.ValueNext, append(lessthan, t.ValuePrefix))
 	case BranchingType:
 		t := gt.(BranchingType)
-		filtered_lessthan := filter_shared_channel(lessthan, t.prefix)
-		if !(InputDependency(filtered_lessthan, t.prefix) && OutputDependency(filtered_lessthan, t.prefix)) {
+		filtered_lessthan := filter_shared_channel(lessthan, t.BranchPrefix)
+		if !(InputDependency(filtered_lessthan, t.BranchPrefix) &&
+			OutputDependency(filtered_lessthan, t.BranchPrefix)) {
 			fmt.Printf("ERROR: Failed to collect dependencies for BranchingType %+v\n", t)
 			return false
 		}
-		new_lessthan := append(lessthan, t.prefix)
-		for _, value := range t.branches {
+		new_lessthan := append(lessthan, t.BranchPrefix)
+		for _, value := range t.Branches {
 			if !linearInternal(value, new_lessthan) {
 				return false
 			}
@@ -707,14 +708,14 @@ func unfold(gt GlobalType, env map[NameType]GlobalType) GlobalType {
 	switch gt.(type) {
 	case ValueType:
 		t := gt.(ValueType)
-		return ValueType{prefix: t.prefix, value: t.value, next: unfold(t.next, env)}
+		return ValueType{ValuePrefix: t.ValuePrefix, Value: t.Value, ValueNext: unfold(t.ValueNext, env)}
 	case BranchingType:
 		t := gt.(BranchingType)
 		branches := make(map[string]GlobalType)
-		for key, value := range t.branches {
+		for key, value := range t.Branches {
 			branches[key] = unfold(value, env)
 		}
-		return BranchingType{prefix: t.prefix, branches: branches}
+		return BranchingType{BranchPrefix: t.BranchPrefix, Branches: branches}
 	case ParallelType:
 		t := gt.(ParallelType)
 		return ParallelType{a: unfold(t.a, env), b: unfold(t.b, env)}
@@ -1417,7 +1418,7 @@ func (sl SelectLabel) typecheck(envNames SortingNames, envVars SortingVariables,
 		return nil, errors.New("Too many typings for selection's next Process")
 	}
 
-	if !lastTyping.values[0].Equals(sl.T.Branches[sl.label]) {
+	if !lastTyping.values[0].Equals(sl.t.Branches[sl.label]) {
 		return nil, errors.New("Type of the branch not equal to the type required for the continuing process on selection")
 	}
 	return TypingPair{key: lastTyping.key, values: append(make([]ProjectionType, 0, 1), ProjectionType{T: sl.T, participant: lastTyping.values[0].participant}), next: lastTyping.next}, nil

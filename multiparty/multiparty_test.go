@@ -144,9 +144,9 @@ func TestBasicStub(test *testing.T) {
 	t := RecursiveType{
 		bind: "T",
 		body: ValueType{
-			prefix: Prefix{P1: "foo", P2: "bar", channel: "channel"},
-			value:  "int",
-			next:   BranchingType{prefix: Prefix{P1: "bar", P2: "foo", channel: "channel2"}, branches: ourMap},
+			ValuePrefix: Prefix{P1: "foo", P2: "bar", PChannel: "channel"},
+			Value:       "int",
+			ValueNext:   BranchingType{BranchPrefix: Prefix{P1: "bar", P2: "foo", PChannel: "channel2"}, Branches: ourMap},
 		}}
 	println("*******************\n\n\n ")
 	outFile, err := os.Create("test.go.out")
