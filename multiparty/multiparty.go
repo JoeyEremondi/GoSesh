@@ -56,6 +56,10 @@ if argsWithoutProg[1] == "--%s"{
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
 	var checker dynamic.Checker
+	addrMap := make(map[dynamic.Channel]*net.Addr)
+	addrMaker := func(c dynamic.Channel)net.Addr{return *addrMap[c]}
+	readFun := makeChannelReader(&addrMap)
+	writeFun := makeChannelWriter(&addrMap)
 	%s
 }
 			`, part, ourProjection.Stub())
@@ -68,6 +72,21 @@ import (
 	"github.com/JoeyEremondi/GoSesh/dynamic"
 
 )
+
+//Higher order function: takes in a (possibly empty) map of addresses for channels
+//Then returns the function which looks up the address for that channel (if it exists)
+//And does the write
+func makeChannelWriter(addrMap *map[dynamic.Channel]*net.Addr)(func(dynamic.Channel, []byte, net.Addr) (int, error)){
+	return func(c dynamic.Channel, b []byte, addr net.Addr) (int, error){
+		panic("TODO!")
+	}
+}
+
+func makeChannelReader(addrMap *map[dynamic.Channel]*net.Addr)(func(dynamic.Channel, []byte) (int, net.Addr, error)){
+	return func(c dynamic.Channel, b []byte) (int, net.Addr, error){
+		panic("TODO!")
+	}
+}
 
 func main(){
 	argsWithoutProg := os.Args[1:]
@@ -814,7 +833,7 @@ func (t LocalSendType) Stub() string {
 	return fmt.Sprintf(`
 var sendArg %s //TODO put a value here
 sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.Channels[%s].Write, sendBuf)
+checker.WriteTo(%s, writeFun, sendBuf, addrMaker)
 %s
 	`, t.Value, addQuotes(t.Channel), t.Next.Stub())
 }
@@ -849,7 +868,7 @@ func (t LocalReceiveType) Stub() string {
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 var recvBuf []byte
-checker.Read(checker.Channels[%s].Read, recvBuf)
+checker.ReadFrom(%s, readFun, recvBuf)
 %s
 %s
 	`, addQuotes(t.Channel), assignmentString, t.Next.Stub())
@@ -908,7 +927,7 @@ func (t LocalSelectionType) Stub() string {
 	return fmt.Sprintf(`
 var labelToSend = "%s" //TODO which label to send
 buf := checker.PrepareSend("TODO Select message", labelToSend)
-checker.Write(checker.Channels[%s].Write, buf)
+checker.WriteTo(%s, writeFun, buf, addrMaker)
 switch labelToSend{
 	%s
 default:
@@ -955,7 +974,7 @@ func (t LocalBranchingType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var ourBuf []byte
-checker.Read(checker.Channels[%s].Read, &ourBuf)
+checker.ReadFrom(%s, readFun, ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{

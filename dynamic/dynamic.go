@@ -9,6 +9,9 @@ import (
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
+//TODO include in constructor library?
+type Channel multiparty.Channel
+
 //Store the "current" type in the computation
 //so that we can ensure each network operation preserves its
 type Checker struct {
@@ -88,7 +91,7 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 	//Make sure we're in a receive or a branch
 	switch t := checker.currentType.(type) {
 	case multiparty.LocalReceiveType:
-		//Nothing to do here, we're good
+		//TODO check that it's the right Go type (the right sort)
 	case multiparty.LocalBranchingType:
 		//Make sure that what was sent was a label (string)
 		//And that it is one of the labels of our current type
@@ -150,12 +153,22 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 	panic(err)
 }
 
-func (checker Checker) WriteTo(c multiparty.Channel, write func(c multiparty.Channel, b []byte) (int, error), b []byte) (int, error) {
+func (checker *Checker) Read(c Channel, read func(Channel, []byte) (int, error), b []byte) (int, error) {
+	curriedRead := func([]byte) (int, error) { return read(c, b) }
+	return capture.Read(curriedRead, b)
+}
+
+func (checker *Checker) Write(c Channel, write func(c Channel, b []byte) (int, error), b []byte) (int, error) {
 	curriedWrite := func(b []byte) (int, error) { return write(c, b) }
 	return capture.Write(curriedWrite, b)
 }
 
-func (checker Checker) ReadFrom(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
-	curriedRead := func([]byte) (int, error) { return read(c, b) }
-	return capture.Read(curriedRead, b)
+func (checker *Checker) ReadFrom(c Channel, readFrom func(Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
+	curriedRead := func(b []byte) (int, net.Addr, error) { return readFrom(c, b) }
+	return capture.ReadFrom(curriedRead, b)
+}
+
+func (checker *Checker) WriteTo(c Channel, writeTo func(Channel, []byte, net.Addr) (int, error), b []byte, addrMaker func(Channel) net.Addr) (int, error) {
+	curriedWrite := func(b []byte, a net.Addr) (int, error) { return writeTo(c, b, a) }
+	return capture.WriteTo(curriedWrite, b, addrMaker(c))
 }

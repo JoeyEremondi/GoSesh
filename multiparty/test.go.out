@@ -7,6 +7,21 @@ import (
 
 )
 
+//Higher order function: takes in a (possibly empty) map of addresses for channels
+//Then returns the function which looks up the address for that channel (if it exists)
+//And does the write
+func makeChannelWriter(addrMap *map[dynamic.Channel]*net.Addr)(func(dynamic.Channel, []byte, net.Addr) (int, error)){
+	return func(c dynamic.Channel, b []byte, addr net.Addr) (int, error){
+		panic("TODO!")
+	}
+}
+
+func makeChannelReader(addrMap *map[dynamic.Channel]*net.Addr)(func(dynamic.Channel, []byte) (int, net.Addr, error)){
+	return func(c dynamic.Channel, b []byte) (int, net.Addr, error){
+		panic("TODO!")
+	}
+}
+
 func main(){
 	argsWithoutProg := os.Args[1:]
 	
@@ -22,18 +37,22 @@ if argsWithoutProg[1] == "--foo"{
 
 func bar_main(args []string){
 	var checker dynamic.Checker
+	addrMap := make(map[dynamic.Channel]*net.Addr)
+	addrMaker := func(c dynamic.Channel)net.Addr{return *addrMap[c]}
+	readFun := makeChannelReader(&addrMap)
+	writeFun := makeChannelWriter(&addrMap)
 	
 T:
 for {
 	
 var recvBuf []byte
-checker.Read(checker.Channels["channel"].Read, recvBuf)
+checker.ReadFrom("channel", readFun, recvBuf)
 var receivedValue int
 checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 
 var labelToSend = "isGood" //TODO which label to send
 buf := checker.PrepareSend("TODO Select message", labelToSend)
-checker.Write(checker.Channels["channel2"].Write, buf)
+checker.WriteTo("channel2", writeFun, buf, addrMaker)
 switch labelToSend{
 	
 	case "isGood":
@@ -55,16 +74,20 @@ default:
 			
 func foo_main(args []string){
 	var checker dynamic.Checker
+	addrMap := make(map[dynamic.Channel]*net.Addr)
+	addrMaker := func(c dynamic.Channel)net.Addr{return *addrMap[c]}
+	readFun := makeChannelReader(&addrMap)
+	writeFun := makeChannelWriter(&addrMap)
 	
 T:
 for {
 	
 var sendArg int //TODO put a value here
 sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.Channels["channel"].Write, sendBuf)
+checker.WriteTo("channel", writeFun, sendBuf, addrMaker)
 
 var ourBuf []byte
-checker.Read(checker.Channels["channel2"].Read, &ourBuf)
+checker.ReadFrom("channel2", readFun, ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
