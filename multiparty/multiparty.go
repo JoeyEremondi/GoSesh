@@ -48,7 +48,7 @@ type RecursiveType struct {
 }
 
 //Generate the program with all the stubs for a global type
-func program(t GlobalType) string {
+func GenerateProgram(t GlobalType) string {
 
 	fmt.Printf("NUM participants %d\n", len(t.participants()))
 
