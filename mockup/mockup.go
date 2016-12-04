@@ -33,18 +33,21 @@ type Event struct {
 	wrappedValueType multiparty.ValueType
 }
 
-/*
- * CreateStubProgram : pass in a list of events and file name to generate
+/* CreateStubProgram : pass in a list of events and file name to generate
  * a go stub file which links the events and converts them to Session Types
  */
 func CreateStubProgram(events []Event, fileName string) {
 	root := link(events)
 
 	outFile, err := os.Create(fileName + ".go.stub")
-	fmt.Println("STUB GENERATION ERROR: ", err)
+	if err != nil {
+		fmt.Println("STUB GENERATION ERROR: ", err)
+	}
 	defer outFile.Close()
 
-	multiparty.GenerateProgram(root)
+	program := multiparty.GenerateProgram(root)
+
+	outFile.WriteString(program)
 }
 
 //Send : wrap a Global Type into an Event for send channel
@@ -64,7 +67,7 @@ func Send(channel Channel, messageType MessageType) Event {
 	valueType := multiparty.ValueType{
 		ValuePrefix: prefix,
 		Value:       sort,
-		ValueNext:   nil}
+		ValueNext:   multiparty.EndType{}}
 
 	send := Event{wrappedValueType: valueType}
 
@@ -87,7 +90,7 @@ func Receive(channel Channel, messageType MessageType) Event {
 	valueType := multiparty.ValueType{
 		ValuePrefix: prefix,
 		Value:       sort,
-		ValueNext:   nil}
+		ValueNext:   multiparty.EndType{}}
 
 	receive := Event{wrappedValueType: valueType}
 

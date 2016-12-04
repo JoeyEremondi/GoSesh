@@ -1,0 +1,55 @@
+
+package main
+
+import (
+	"os"
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+
+)
+
+func main(){
+	argsWithoutProg := os.Args[1:]
+	
+if argsWithoutProg[1] == "--A"{
+	A_main(argsWithoutProg[2:])
+}
+			
+if argsWithoutProg[1] == "--B"{
+	B_main(argsWithoutProg[2:])
+}
+			
+}
+
+func A_main(args []string){
+	var checker dynamic.Checker
+	
+var sendArg int //TODO put a value here
+sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+checker.Write(checker.channels["fromAtoB"].Write, sendBuf)
+
+var recvBuf []byte
+checker.Read(checker.channels["BreceiveA"].Read, recvBuf)
+var receivedValue int
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+return
+	
+	
+}
+			
+func B_main(args []string){
+	var checker dynamic.Checker
+	
+var recvBuf []byte
+checker.Read(checker.channels["fromAtoB"].Read, recvBuf)
+var receivedValue int
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+
+var sendArg int //TODO put a value here
+sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+checker.Write(checker.channels["BreceiveA"].Write, sendBuf)
+return
+	
+	
+}
+			
+	
