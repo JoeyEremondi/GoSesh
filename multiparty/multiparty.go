@@ -101,7 +101,9 @@ func %s_main(args []string){
 package main
 
 import (
+	"net"
 	"os"
+
 	"github.com/JoeyEremondi/GoSesh/dynamic"
 
 )
