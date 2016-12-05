@@ -25,13 +25,22 @@ type Checker struct {
 	//TODO other stuff handy to have here?
 }
 
+func CreateChecker(t multiparty.LocalType) Checker {
+	ret := Checker{govec.Initialize("TODO ID", "TODOLogFile.txt"), t, nil}
+	//make sure we start with a type we can deal with
+	ret.unfoldIfRecurisve()
+	return ret
+}
+
 //Unfold any top-level recursive types, if they're the current type
 //Otherwise, do nothing
 func (checker *Checker) unfoldIfRecurisve() {
 	for {
 		switch t := checker.currentType.(type) {
 		case multiparty.LocalRecursiveType:
+			//fmt.Printf("Current type before unfolding: %#v\n", checker.currentType)
 			checker.currentType = t.UnfoldOneLevel()
+			//fmt.Printf("Current type after unfolding: %#v\n", checker.currentType)
 			//Check if there's nested recursion by looping again
 			continue
 		default:
@@ -144,7 +153,7 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 			panic("Unpacking data of the wrong type at a Selection point. Should be a string")
 		}
 	default:
-		panic("Tried to do receive on send type")
+		panic(fmt.Sprintf("Tried to do send on receive type. Current type: %#v", checker.currentType))
 
 	}
 

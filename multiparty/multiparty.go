@@ -78,7 +78,7 @@ if argsWithoutProg[1] == "--%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
-	var checker dynamic.Checker
+	checker := dynamic.CreateChecker(%#v)
 	addrMap := make(map[dynamic.Participant]net.Addr)
 	addrMaker := func(p dynamic.Participant)net.Addr{
 		addr, ok := addrMap[p]
@@ -95,7 +95,7 @@ func %s_main(args []string){
 	writeFun := makeChannelWriter(&addrMap)
 	%s
 }
-			`, part, ourProjection.Stub())
+			`, part, ourProjection, ourProjection.Stub())
 	}
 	return fmt.Sprintf(`
 package main
@@ -984,6 +984,10 @@ func (t LocalBranchingType) Equals(l LocalType) bool {
 
 type LocalNameType string
 
+func (t LocalNameType) GoString() string {
+	return fmt.Sprintf("multiparty.LocalNameType(\"%s\")", t)
+}
+
 func (t LocalNameType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	if u == t {
 		return tsub
@@ -1012,7 +1016,7 @@ type LocalRecursiveType struct {
 }
 
 func (t LocalRecursiveType) UnfoldOneLevel() LocalType {
-	return t.Substitute(t.Bind, t)
+	return t.Body.Substitute(t.Bind, t)
 }
 
 func (t LocalRecursiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {

@@ -40,7 +40,7 @@ if argsWithoutProg[1] == "--bar"{
 }
 
 func foo_main(args []string){
-	var checker dynamic.Checker
+	checker := dynamic.CreateChecker(multiparty.LocalRecursiveType{Bind:multiparty.LocalNameType("T"), Body:multiparty.LocalSendType{Participant:"bar", Value:"int", Next:multiparty.LocalBranchingType{Participant:"bar", Branches:map[string]multiparty.LocalType{"isGood":multiparty.LocalEndType{}, "isBad":multiparty.LocalNameType("T")}}}})
 	addrMap := make(map[dynamic.Participant]net.Addr)
 	addrMaker := func(p dynamic.Participant)net.Addr{
 		addr, ok := addrMap[p]
@@ -69,12 +69,12 @@ var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
 	
-	case "isBad":
-		continue T
-
-			
 	case "isGood":
 		return
+
+			
+	case "isBad":
+		continue T
 
 			
 default:
@@ -87,7 +87,7 @@ default:
 }
 			
 func bar_main(args []string){
-	var checker dynamic.Checker
+	checker := dynamic.CreateChecker(multiparty.LocalRecursiveType{Bind:multiparty.LocalNameType("T"), Body:multiparty.LocalReceiveType{Participant:"foo", Value:"int", Next:multiparty.LocalSelectionType{Participant:"foo", Branches:map[string]multiparty.LocalType{"isGood":multiparty.LocalEndType{}, "isBad":multiparty.LocalNameType("T")}}}})
 	addrMap := make(map[dynamic.Participant]net.Addr)
 	addrMaker := func(p dynamic.Participant)net.Addr{
 		addr, ok := addrMap[p]
