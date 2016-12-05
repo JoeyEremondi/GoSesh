@@ -69,12 +69,12 @@ var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
 	
-	case "isGood":
-		return
-
-			
 	case "isBad":
 		continue T
+
+			
+	case "isGood":
+		return
 
 			
 default:

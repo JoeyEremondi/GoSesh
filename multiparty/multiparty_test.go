@@ -4,6 +4,7 @@ import (
 	"go/format"
 	"os"
 	"testing"
+	//"github.com/JoeyEremondi/GoSesh/multiparty"
 )
 
 //
@@ -155,9 +156,9 @@ func TestBasicStub(test *testing.T) {
 	goodFile, err := os.Create("../testFile/main.go")
 	defer goodFile.Close()
 
-	outFile.WriteString(program(t))
+	outFile.WriteString(GenerateProgram(t))
 
-	stub := []byte(program(t))
+	stub := []byte(GenerateProgram(t))
 	formatted, err := format.Source(stub)
 	if err != nil {
 		panic(err)
