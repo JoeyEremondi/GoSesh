@@ -25,8 +25,8 @@ type Checker struct {
 	//TODO other stuff handy to have here?
 }
 
-func CreateChecker(t multiparty.LocalType) Checker {
-	ret := Checker{govec.Initialize("TODO ID", "TODOLogFile.txt"), t, nil}
+func CreateChecker(id string, t multiparty.LocalType) Checker {
+	ret := Checker{govec.Initialize(id, "TODOLogFile.txt"), t, nil}
 	//make sure we start with a type we can deal with
 	ret.unfoldIfRecurisve()
 	return ret
@@ -119,7 +119,7 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 			}
 
 		default:
-			panic("Unpacking data of the wrong type at a Branching point. Should be a string")
+			panic(fmt.Sprintf("Unpacking data of the wrong type at a Branching point. Should be a *string, but is %T", unpack))
 		}
 	default:
 		panic("Tried to do send on receive type")
@@ -153,8 +153,14 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
 			}
 
+		case string:
+			_, ok := t.Branches[unpackString]
+			if !ok {
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", unpackString))
+			}
+
 		default:
-			panic("Unpacking data of the wrong type at a Selection point. Should be a string")
+			panic(fmt.Sprintf("Unpacking data of the wrong type at a Selection point. Should be a string or *string, but is %T", unpackString))
 		}
 	default:
 		panic(fmt.Sprintf("Tried to do send on receive type. Current type: %#v", checker.currentType))

@@ -80,7 +80,7 @@ if argsWithoutProg[0] == "%s"{
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
 	conn := ConnectNode(%s)
-	checker := dynamic.CreateChecker(%#v)
+	checker := dynamic.CreateChecker(%s, %#v)
 	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
 	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
 		addr, ok := addrMap[p]
@@ -97,7 +97,7 @@ func %s_main(args []string){
 	writeFun := makeChannelWriter(conn, &addrMap)
 	%s
 }
-			`, nodeName, addQuotes(part), ourProjection, ourProjection.Stub())
+			`, nodeName, addQuotes(part), addQuotes(part), ourProjection, ourProjection.Stub())
 	}
 	return fmt.Sprintf(`
 package main
