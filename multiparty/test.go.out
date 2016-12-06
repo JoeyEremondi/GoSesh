@@ -36,13 +36,14 @@ func ConnectNode(laddress string) *net.UDPConn {
 //And does the write
 func makeChannelWriter(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte, *net.UDPAddr) (int, error)){
 	return func(p dynamic.Participant, b []byte, addr *net.UDPAddr) (int, error){
-		panic("TODO")
+		//TODO get addr from map!
+		return conn.WriteToUDP(b, addr)
 	}
 }
 
 func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte) (int, *net.UDPAddr, error)){
 	return func(p dynamic.Participant, b []byte) (int, *net.UDPAddr, error){
-		panic("TODO!")
+		return conn.ReadFromUDP(b)
 	}
 }
 
