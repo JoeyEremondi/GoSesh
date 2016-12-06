@@ -111,7 +111,11 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		case *string:
 			_, ok := t.Branches[*unpackString]
 			if !ok {
-				panic(fmt.Sprintf("Received invalid label %s at branching point, should be one of TODO", *unpackString))
+				errString := fmt.Sprintf("Received invalid label %s at branching point, should be one of \n", *unpackString)
+				for k, _ := range t.Branches {
+					errString += k + ", "
+				}
+				panic(errString)
 			}
 
 		default:

@@ -10,7 +10,9 @@ import (
 )
 
 func handleError(e error){
-	panic(e)
+	if e != nil{
+			panic(e)
+	}
 }
 
 var PROTOCOL string =  "udp"
@@ -62,7 +64,7 @@ if argsWithoutProg[0] == "127.0.0.1:24602"{
 
 func node_127_0_0_1__24601_main(args []string){
 	conn := ConnectNode("127.0.0.1:24601")
-	checker := dynamic.CreateChecker(multiparty.LocalRecursiveType{Bind:multiparty.LocalNameType("T"), Body:multiparty.LocalSendType{Participant:"127.0.0.1:24602", Value:"int", Next:multiparty.LocalBranchingType{Participant:"127.0.0.1:24602", Branches:map[string]multiparty.LocalType{"isBad":multiparty.LocalNameType("T"), "isGood":multiparty.LocalEndType{}}}}})
+	checker := dynamic.CreateChecker(multiparty.LocalRecursiveType{Bind:multiparty.LocalNameType("T"), Body:multiparty.LocalSendType{Participant:"127.0.0.1:24602", Value:"int", Next:multiparty.LocalBranchingType{Participant:"127.0.0.1:24602", Branches:map[string]multiparty.LocalType{"isGood":multiparty.LocalEndType{}, "isBad":multiparty.LocalNameType("T")}}}})
 	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
 	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
 		addr, ok := addrMap[p]
@@ -91,12 +93,12 @@ var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
 	
-	case "isBad":
-		continue T
-
-			
 	case "isGood":
 		return
+
+			
+	case "isBad":
+		continue T
 
 			
 default:

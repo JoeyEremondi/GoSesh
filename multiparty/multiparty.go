@@ -111,7 +111,9 @@ import (
 )
 
 func handleError(e error){
-	panic(e)
+	if e != nil{
+			panic(e)
+	}
 }
 
 var PROTOCOL string =  "udp"
