@@ -875,7 +875,7 @@ func (t LocalReceiveType) Stub() string {
 	assignmentString += "checker.UnpackReceive(\"TODO unpack message\", recvBuf, &receivedValue)"
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
-var recvBuf []byte
+recvBuf := make([]byte, 1024)
 checker.ReadFromUDP(%s, readFun, recvBuf)
 %s
 %s
@@ -981,7 +981,7 @@ func (t LocalBranchingType) Stub() string {
 
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
-var ourBuf []byte
+ourBuf := make([]byte, 1024)
 checker.ReadFromUDP(%s, readFun, ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)

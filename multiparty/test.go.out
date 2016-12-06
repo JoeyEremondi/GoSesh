@@ -87,7 +87,7 @@ var sendArg int //TODO put a value here
 sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
 checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
 
-var ourBuf []byte
+ourBuf := make([]byte, 1024)
 checker.ReadFromUDP("127.0.0.1:24602", readFun, ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
@@ -131,7 +131,7 @@ func node_127_0_0_1__24602_main(args []string){
 T:
 for {
 	
-var recvBuf []byte
+recvBuf := make([]byte, 1024)
 checker.ReadFromUDP("127.0.0.1:24601", readFun, recvBuf)
 var receivedValue int
 checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
