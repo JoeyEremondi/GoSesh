@@ -63,14 +63,15 @@ func GenerateProgram(t GlobalType) string {
 	}
 
 	for part, _ := range seenParticipants {
+		nodeName := "node_" + strings.Replace(strings.Replace(string(part), ":", "__", 1), ".", "_", 3)
 		fmt.Printf("Participant %s\n", part)
 		fmt.Printf("Adding Participant %s\n", part)
 		seenParticipants[part] = true
 		participantCases += fmt.Sprintf(`
-if argsWithoutProg[1] == "--%s"{
-	%s_main(argsWithoutProg[2:])
+if argsWithoutProg[0] == "%s"{
+	%s_main(argsWithoutProg[1:])
 }
-			`, part, part)
+			`, part, nodeName)
 
 		ourProjection, err := t.project(part)
 		if err != nil {
@@ -96,7 +97,7 @@ func %s_main(args []string){
 	writeFun := makeChannelWriter(conn, &addrMap)
 	%s
 }
-			`, part, addQuotes(part), ourProjection, ourProjection.Stub())
+			`, nodeName, addQuotes(part), ourProjection, ourProjection.Stub())
 	}
 	return fmt.Sprintf(`
 package main
