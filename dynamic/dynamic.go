@@ -184,3 +184,13 @@ func (checker *Checker) WriteTo(c Participant, writeTo func(Participant, []byte,
 	curriedWrite := func(b []byte, a net.Addr) (int, error) { return writeTo(c, b, a) }
 	return capture.WriteTo(curriedWrite, b, addrMaker(c))
 }
+
+func (checker *Checker) ReadFromUDP(c Participant, readFrom func(Participant, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error) {
+	curriedRead := func(b []byte) (int, *net.UDPAddr, error) { return readFrom(c, b) }
+	return capture.ReadFromUDP(curriedRead, b)
+}
+
+func (checker *Checker) WriteToUDP(c Participant, writeTo func(Participant, []byte, *net.UDPAddr) (int, error), b []byte, addrMaker func(Participant) *net.UDPAddr) (int, error) {
+	curriedWrite := func(b []byte, a *net.UDPAddr) (int, error) { return writeTo(c, b, a) }
+	return capture.WriteToUDP(curriedWrite, b, addrMaker(c))
+}

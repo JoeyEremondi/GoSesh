@@ -78,9 +78,10 @@ if argsWithoutProg[1] == "--%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
+	conn := ConnectNode(%s)
 	checker := dynamic.CreateChecker(%#v)
-	addrMap := make(map[dynamic.Participant]net.Addr)
-	addrMaker := func(p dynamic.Participant)net.Addr{
+	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
+	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
 		addr, ok := addrMap[p]
 		if ok && addr != nil {
 			return addr
@@ -91,11 +92,11 @@ func %s_main(args []string){
 			return addr
 		}
 	}
-	readFun := makeChannelReader(&addrMap)
-	writeFun := makeChannelWriter(&addrMap)
+	readFun := makeChannelReader(conn, &addrMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
 	%s
 }
-			`, part, ourProjection, ourProjection.Stub())
+			`, part, addQuotes(part), ourProjection, ourProjection.Stub())
 	}
 	return fmt.Sprintf(`
 package main
@@ -105,22 +106,42 @@ import (
 	"os"
 
 	"github.com/JoeyEremondi/GoSesh/dynamic"
-
+	"github.com/JoeyEremondi/GoSesh/multiparty"
 )
+
+func handleError(e error){
+	panic(e)
+}
+
+var PROTOCOL string =  "udp"
+var BUFFERSIZE int = 1000000
+
+// calls this function to set it up
+// ConnectNode : Set up a connection for a node
+func ConnectNode(laddress string) *net.UDPConn {
+	laddressUDP, addrError := net.ResolveUDPAddr(PROTOCOL, laddress)
+	handleError(addrError)
+
+	conn, connError := net.ListenUDP(PROTOCOL, laddressUDP)
+	handleError(connError)
+	conn.SetReadBuffer(BUFFERSIZE)
+
+	return conn
+}
+
 
 
 //Higher order function: takes in a (possibly empty) map of addresses for channels
 //Then returns the function which looks up the address for that channel (if it exists)
 //And does the write
-func makeChannelWriter(addrMap *map[dynamic.Participant]net.Addr)(func(dynamic.Participant, []byte, net.Addr) (int, error)){
-	return func(p dynamic.Participant, b []byte, addr net.Addr) (int, error){
+func makeChannelWriter(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte, *net.UDPAddr) (int, error)){
+	return func(p dynamic.Participant, b []byte, addr *net.UDPAddr) (int, error){
 		panic("TODO")
-
 	}
 }
 
-func makeChannelReader(addrMap *map[dynamic.Participant]net.Addr)(func(dynamic.Participant, []byte) (int, net.Addr, error)){
-	return func(p dynamic.Participant, b []byte) (int, net.Addr, error){
+func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte) (int, *net.UDPAddr, error)){
+	return func(p dynamic.Participant, b []byte) (int, *net.UDPAddr, error){
 		panic("TODO!")
 	}
 }
@@ -816,7 +837,7 @@ func (t LocalSendType) Stub() string {
 	return fmt.Sprintf(`
 var sendArg %s //TODO put a value here
 sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.WriteTo(%s, writeFun, sendBuf, addrMaker)
+checker.WriteToUDP(%s, writeFun, sendBuf, addrMaker)
 %s
 	`, t.Value, addQuotes(t.Participant), t.Next.Stub())
 }
@@ -851,7 +872,7 @@ func (t LocalReceiveType) Stub() string {
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
 var recvBuf []byte
-checker.ReadFrom(%s, readFun, recvBuf)
+checker.ReadFromUDP(%s, readFun, recvBuf)
 %s
 %s
 	`, addQuotes(t.Participant), assignmentString, t.Next.Stub())
@@ -910,7 +931,7 @@ func (t LocalSelectionType) Stub() string {
 	return fmt.Sprintf(`
 var labelToSend = "%s" //TODO which label to send
 buf := checker.PrepareSend("TODO Select message", labelToSend)
-checker.WriteTo(%s, writeFun, buf, addrMaker)
+checker.WriteToUDP(%s, writeFun, buf, addrMaker)
 switch labelToSend{
 	%s
 default:
@@ -957,7 +978,7 @@ func (t LocalBranchingType) Stub() string {
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
 var ourBuf []byte
-checker.ReadFrom(%s, readFun, ourBuf)
+checker.ReadFromUDP(%s, readFun, ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
