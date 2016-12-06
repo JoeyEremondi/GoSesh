@@ -63,14 +63,15 @@ func GenerateProgram(t GlobalType) string {
 	}
 
 	for part, _ := range seenParticipants {
+		nodeName := "node_" + strings.Replace(strings.Replace(string(part), ":", "__", 1), ".", "_", 3)
 		fmt.Printf("Participant %s\n", part)
 		fmt.Printf("Adding Participant %s\n", part)
 		seenParticipants[part] = true
 		participantCases += fmt.Sprintf(`
-if argsWithoutProg[1] == "--%s"{
-	%s_main(argsWithoutProg[2:])
+if argsWithoutProg[0] == "%s"{
+	%s_main(argsWithoutProg[1:])
 }
-			`, part, part)
+			`, part, nodeName)
 
 		ourProjection, err := t.project(part)
 		if err != nil {
@@ -78,19 +79,76 @@ if argsWithoutProg[1] == "--%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
-	var checker dynamic.Checker
+	conn := ConnectNode(%s)
+	checker := dynamic.CreateChecker(%s, %#v)
+	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
+	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", p.String())
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(conn, &addrMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
 	%s
 }
-			`, part, ourProjection.Stub())
+			`, nodeName, addQuotes(part), addQuotes(part), ourProjection, ourProjection.Stub())
 	}
 	return fmt.Sprintf(`
 package main
 
 import (
+	"net"
 	"os"
-	"github.com/JoeyEremondi/GoSesh/dynamic"
 
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+	"github.com/JoeyEremondi/GoSesh/multiparty"
 )
+
+func handleError(e error){
+	if e != nil{
+			panic(e)
+	}
+}
+
+var PROTOCOL string =  "udp"
+var BUFFERSIZE int = 1000000
+
+// calls this function to set it up
+// ConnectNode : Set up a connection for a node
+func ConnectNode(laddress string) *net.UDPConn {
+	laddressUDP, addrError := net.ResolveUDPAddr(PROTOCOL, laddress)
+	handleError(addrError)
+
+	conn, connError := net.ListenUDP(PROTOCOL, laddressUDP)
+	handleError(connError)
+	conn.SetReadBuffer(BUFFERSIZE)
+
+	return conn
+}
+
+
+
+//Higher order function: takes in a (possibly empty) map of addresses for channels
+//Then returns the function which looks up the address for that channel (if it exists)
+//And does the write
+func makeChannelWriter(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte, *net.UDPAddr) (int, error)){
+	return func(p dynamic.Participant, b []byte, addr *net.UDPAddr) (int, error){
+		//TODO get addr from map!
+		return conn.WriteToUDP(b, addr)
+	}
+}
+
+func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte) (int, *net.UDPAddr, error)){
+	return func(p dynamic.Participant, b []byte) (int, *net.UDPAddr, error){
+		return conn.ReadFromUDP(b)
+	}
+}
 
 func main(){
 	argsWithoutProg := os.Args[1:]
@@ -144,7 +202,7 @@ func count(participants ParticipantSet) int {
 type Channel string
 type Sort string
 
-func addQuotes(s Channel) string {
+func addQuotes(s Participant) string {
 	return fmt.Sprintf(`"%s"`, s)
 }
 
@@ -271,9 +329,9 @@ func (t ValueType) project(p Participant) (LocalType, error) {
 	if err != nil {
 		return nil, err
 	} else if t.ValuePrefix.P1 == p {
-		ans = LocalSendType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
+		ans = LocalSendType{Participant: t.ValuePrefix.P2, Value: t.Value, Next: ans}
 	} else if t.ValuePrefix.P2 == p {
-		ans = LocalReceiveType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
+		ans = LocalReceiveType{Participant: t.ValuePrefix.P1, Value: t.Value, Next: ans}
 	}
 	return ans, err
 }
@@ -357,9 +415,9 @@ func (b BranchingType) project(p Participant) (LocalType, error) {
 	}
 
 	if b.BranchPrefix.P1 == p {
-		return LocalSelectionType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
+		return LocalSelectionType{Participant: b.BranchPrefix.P2, Branches: branches}, nil
 	} else if b.BranchPrefix.P2 == p {
-		return LocalBranchingType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
+		return LocalBranchingType{Participant: b.BranchPrefix.P1, Branches: branches}, nil
 	} else if unique(branches) {
 		for _, branch := range branches {
 			return branch, nil
@@ -762,9 +820,9 @@ func findProjection(participant Participant, projections []ProjectionType) (Proj
 }
 
 type LocalSendType struct {
-	Channel Channel
-	Value   Sort
-	Next    LocalType
+	Participant Participant
+	Value       Sort
+	Next        LocalType
 }
 
 func (t LocalSendType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -783,24 +841,24 @@ func (t LocalSendType) Stub() string {
 	return fmt.Sprintf(`
 var sendArg %s //TODO put a value here
 sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.channels[%s].Write, sendBuf)
+checker.WriteToUDP(%s, writeFun, sendBuf, addrMaker)
 %s
-	`, t.Value, addQuotes(t.Channel), t.Next.Stub())
+	`, t.Value, addQuotes(t.Participant), t.Next.Stub())
 }
 
 func (t LocalSendType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalSendType:
 		lt := l.(LocalSendType)
-		return t.Channel == lt.Channel && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
+		return t.Participant == lt.Participant && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalReceiveType struct {
-	Channel Channel
-	Value   Sort
-	Next    LocalType
+	Participant Participant
+	Value       Sort
+	Next        LocalType
 }
 
 func (t LocalReceiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -817,26 +875,26 @@ func (t LocalReceiveType) Stub() string {
 	assignmentString += "checker.UnpackReceive(\"TODO unpack message\", recvBuf, &receivedValue)"
 	//Serialize each argument, then do the send, and whatever comes after
 	return fmt.Sprintf(`
-var recvBuf []byte
-checker.Read(checker.channels[%s].Read, recvBuf)
+recvBuf := make([]byte, 1024)
+checker.ReadFromUDP(%s, readFun, recvBuf)
 %s
 %s
-	`, addQuotes(t.Channel), assignmentString, t.Next.Stub())
+	`, addQuotes(t.Participant), assignmentString, t.Next.Stub())
 }
 
 func (t LocalReceiveType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalReceiveType:
 		lt := l.(LocalReceiveType)
-		return t.Channel == lt.Channel && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
+		return t.Participant == lt.Participant && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalSelectionType struct {
 	// k \oplus
-	Channel  Channel
-	Branches map[string]LocalType
+	Participant Participant
+	Branches    map[string]LocalType
 }
 
 func (t LocalSelectionType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -877,13 +935,13 @@ func (t LocalSelectionType) Stub() string {
 	return fmt.Sprintf(`
 var labelToSend = "%s" //TODO which label to send
 buf := checker.PrepareSend("TODO Select message", labelToSend)
-checker.Write(checker.channels[%s].Write, buf)
+checker.WriteToUDP(%s, writeFun, buf, addrMaker)
 switch labelToSend{
 	%s
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, ourLabel, addQuotes(t.Channel), caseStrings)
+		`, ourLabel, addQuotes(t.Participant), caseStrings)
 }
 
 func (t LocalSelectionType) Equals(l LocalType) bool {
@@ -895,15 +953,15 @@ func (t LocalSelectionType) Equals(l LocalType) bool {
 				return false
 			}
 		}
-		return t.Channel == lt.Channel
+		return t.Participant == lt.Participant
 	}
 	return false
 }
 
 type LocalBranchingType struct {
 	// k &
-	Channel  Channel
-	Branches map[string]LocalType
+	Participant Participant
+	Branches    map[string]LocalType
 }
 
 func (t LocalBranchingType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -923,8 +981,8 @@ func (t LocalBranchingType) Stub() string {
 
 	//In our code, set the label value to default, then branch based on the label value
 	return fmt.Sprintf(`
-var ourBuf []byte
-checker.Read(checker.channels[%s].Read, &ourBuf)
+ourBuf := make([]byte, 1024)
+checker.ReadFromUDP(%s, readFun, ourBuf)
 var receivedLabel string
 checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 switch receivedLabel{
@@ -932,7 +990,7 @@ switch receivedLabel{
 default:
 	panic("Invalid label sent at selection choice")
 }
-		`, addQuotes(t.Channel), caseStrings)
+		`, addQuotes(t.Participant), caseStrings)
 }
 
 func (t LocalBranchingType) Equals(l LocalType) bool {
@@ -944,12 +1002,16 @@ func (t LocalBranchingType) Equals(l LocalType) bool {
 				return false
 			}
 		}
-		return t.Channel == lt.Channel
+		return t.Participant == lt.Participant
 	}
 	return false
 }
 
 type LocalNameType string
+
+func (t LocalNameType) GoString() string {
+	return fmt.Sprintf("multiparty.LocalNameType(\"%s\")", t)
+}
 
 func (t LocalNameType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	if u == t {
@@ -979,7 +1041,7 @@ type LocalRecursiveType struct {
 }
 
 func (t LocalRecursiveType) UnfoldOneLevel() LocalType {
-	return t.Substitute(t.Bind, t)
+	return t.Body.Substitute(t.Bind, t)
 }
 
 func (t LocalRecursiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {

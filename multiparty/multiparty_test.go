@@ -4,8 +4,6 @@ import (
 	"go/format"
 	"os"
 	"testing"
-
-	"github.com/JoeyEremondi/GoSesh/multiparty"
 	//"github.com/JoeyEremondi/GoSesh/multiparty"
 )
 
@@ -139,17 +137,17 @@ import (
 
 func TestBasicStub(test *testing.T) {
 
-	ourMap := map[string]multiparty.GlobalType{
-		"isGood": multiparty.EndType{},
-		"isBad":  multiparty.NameType("T"),
+	ourMap := map[string]GlobalType{
+		"isGood": EndType{},
+		"isBad":  NameType("T"),
 	}
 
-	t := multiparty.RecursiveType{
+	t := RecursiveType{
 		Bind: "T",
-		Body: multiparty.ValueType{
-			ValuePrefix: multiparty.Prefix{P1: "foo", P2: "bar", PChannel: "channel"},
+		Body: ValueType{
+			ValuePrefix: Prefix{P1: "127.0.0.1:24601", P2: "127.0.0.1:24602", PChannel: "channel"},
 			Value:       "int",
-			ValueNext:   multiparty.BranchingType{BranchPrefix: multiparty.Prefix{P1: "bar", P2: "foo", PChannel: "channel2"}, Branches: ourMap},
+			ValueNext:   BranchingType{BranchPrefix: Prefix{P1: "127.0.0.1:24602", P2: "127.0.0.1:24601", PChannel: "channel"}, Branches: ourMap},
 		}}
 	println("*******************\n\n\n ")
 	outFile, err := os.Create("test.go.out")
@@ -160,7 +158,7 @@ func TestBasicStub(test *testing.T) {
 
 	outFile.WriteString(GenerateProgram(t))
 
-	stub := []byte(program(t))
+	stub := []byte(GenerateProgram(t))
 	formatted, err := format.Source(stub)
 	if err != nil {
 		panic(err)
