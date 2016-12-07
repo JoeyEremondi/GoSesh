@@ -150,20 +150,28 @@ func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
 		case *string:
 			_, ok := t.Branches[*unpackString]
 			if !ok {
-				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
+				errString := fmt.Sprintf("Received invalid label %s at branching point, should be one of \n", *unpackString)
+				for k, _ := range t.Branches {
+					errString += k + ", "
+				}
+				panic(errString)
 			}
 
 		case string:
 			_, ok := t.Branches[unpackString]
 			if !ok {
-				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", unpackString))
+				errString := fmt.Sprintf("Received invalid label %s at branching point, should be one of \n", unpackString)
+				for k, _ := range t.Branches {
+					errString += k + ", "
+				}
+				panic(errString)
 			}
 
 		default:
 			panic(fmt.Sprintf("Unpacking data of the wrong type at a Selection point. Should be a string or *string, but is %T", unpackString))
 		}
 	default:
-		panic(fmt.Sprintf("Tried to do send on receive type. Current type: %#v", checker.currentType))
+		panic(fmt.Sprintf("Tried to do send on receive type. "))
 
 	}
 
