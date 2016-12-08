@@ -57,7 +57,7 @@ func CreateStubProgram(fileName string, events ...Event) {
 	}
 	defer outFile.Close()
 
-	program := multiparty.GenerateProgram(root)
+	program := GenerateProgram(root)
 
 	outFile.WriteString(program)
 }
