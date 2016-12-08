@@ -112,7 +112,7 @@ default:
 			
 func node_127_0_0_1__24602_main(args []string){
 	conn := ConnectNode("127.0.0.1:24602")
-	checker := dynamic.CreateChecker("127.0.0.1:24602", multiparty.LocalRecursiveType{Bind:multiparty.LocalNameType("T"), Body:multiparty.LocalReceiveType{Participant:"127.0.0.1:24601", Value:"int", Next:multiparty.LocalSelectionType{Participant:"127.0.0.1:24601", Branches:map[string]multiparty.LocalType{"isGood":multiparty.LocalEndType{}, "isBad":multiparty.LocalNameType("T")}}}})
+	checker := dynamic.CreateChecker("127.0.0.1:24602", multiparty.LocalRecursiveType{Bind:multiparty.LocalNameType("T"), Body:multiparty.LocalReceiveType{Participant:"127.0.0.1:24601", Value:"int", Next:multiparty.LocalSelectionType{Participant:"127.0.0.1:24601", Branches:map[string]multiparty.LocalType{"isBad":multiparty.LocalNameType("T"), "isGood":multiparty.LocalEndType{}}}}})
 	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
 	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
 		addr, ok := addrMap[p]
