@@ -136,9 +136,9 @@ func Break() Event {
 func Continue(label string) Event {
 	//Since this is a GOTO, it ignores whatever the "next" thing is
 	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
-		if false {
+		if false { //UNused
 			return nextType
-		} //UNused
+		}
 		return multiparty.NameType(label)
 	}
 	return Event{wrappedType: retFun}
@@ -157,6 +157,15 @@ func Parallel(events ...Event) Event {
 			}
 			return parSoFar
 		}
+	}
+	return Event{wrappedType: retFun}
+}
+
+//Sequence a bunch of events into a single event
+//This is mostly useful for putting them inside a Parallel block
+func Sequence(events ...Event) Event {
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		return linkWithType(events, nextType)
 	}
 	return Event{wrappedType: retFun}
 }
