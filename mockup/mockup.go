@@ -36,9 +36,13 @@ type Event struct {
 }
 
 //Use these to make the branches of a Switch statement
-type Case struct {
-	Label  string
-	ThenDo Event
+type SwitchCase struct {
+	label  string
+	thenDo []Event
+}
+
+func Case(label string, thenDo ...Event) SwitchCase {
+	return SwitchCase{label: label, thenDo: thenDo}
 }
 
 /* CreateStubProgram : pass in a list of events and file name to generate
@@ -58,17 +62,21 @@ func CreateStubProgram(events []Event, fileName string) {
 	outFile.WriteString(program)
 }
 
-//Send : wrap a Global Type into an Event for send channel
-func Send(channel Channel, messageType MessageType) Event {
-
+//Helper function: make a prefix from a channel
+func makePrefix(channel Channel) multiparty.Prefix {
 	participant1 := multiparty.Participant(channel.Source)
 	participant2 := multiparty.Participant(channel.Destination)
 	multipartyChannel := multiparty.Channel(channel.Name)
 
-	prefix := multiparty.Prefix{
+	return multiparty.Prefix{
 		P1:       participant1,
 		P2:       participant2,
 		PChannel: multipartyChannel}
+}
+
+//Send : wrap a Global Type into an Event for send channel
+func Send(channel Channel, messageType MessageType) Event {
+	prefix := makePrefix(channel)
 
 	sort := multiparty.Sort(messageType.Type)
 
@@ -82,6 +90,24 @@ func Send(channel Channel, messageType MessageType) Event {
 	send := Event{wrappedType: valueType}
 
 	return send
+}
+
+func Switch(channel Channel, branches ...SwitchCase) Event {
+	//Each branch has a list of events to do in the branch
+	//We make a function wating for the type of what we do after the branch
+	//which we then use as next thing to do in each branch.
+	//This lets you write natural-looking branches that are translated
+	//into  session types
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		branchMap := make(map[string]multiparty.GlobalType)
+		for _, someCase := range branches {
+			branchMap[someCase.label] = linkWithType(someCase.thenDo, nextType)
+		}
+		return multiparty.BranchingType{
+			BranchPrefix: makePrefix(channel),
+			Branches:     branchMap}
+	}
+	return Event{wrappedType: retFun}
 }
 
 //Receive : wrap a Global Type into an Event for receive channel
@@ -111,18 +137,16 @@ func Receive(channel Channel, messageType MessageType) Event {
 /* EventList : sequential list of events in a protocol stub
  * In Session Type theory, this is a nested linked list
  */
-func link(events []Event) multiparty.GlobalType {
-
-	//Things get a little more complicated when we have Branching and Parallel types
-	//We start at the back of our list of events, accumulating the current "doNext" value
-	//When we see a Send type, we make our accum its next, and make it our accum
-	//When we see a branching type, we make our accum the next of each branch
-	//When we see a parallel type, TODO
-
-	// Iterate through the list of events and place them into nested GlobalTypes
-	var currentType multiparty.GlobalType = multiparty.EndType{}
+func linkWithType(events []Event, startType multiparty.GlobalType) multiparty.GlobalType {
+	//Iterate from the back of our array, build up a single type
+	//By passing our currentType to the next function waiting for its "doNext" type
+	currentType := startType
 	for i := len(events) - 1; i >= 0; i-- {
 		currentType = events[i].wrappedType(currentType)
 	}
 	return currentType
+}
+
+func link(events []Event) multiparty.GlobalType {
+	return linkWithType(events, multiparty.EndType{})
 }
