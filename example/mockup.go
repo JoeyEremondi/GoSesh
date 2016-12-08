@@ -20,9 +20,10 @@ func ASendToBThenBToC() {
 
 	sendBToC := mockup.Send(channelBToC, message)
 
-	events := []mockup.Event{sendAToB, sendBToC}
-
-	mockup.CreateStubProgram(events, "ABCExample")
+	mockup.CreateStubProgram("ABCExample",
+		sendAToB,
+		sendBToC,
+	)
 }
 
 func main() {

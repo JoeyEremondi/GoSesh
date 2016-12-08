@@ -48,7 +48,7 @@ func Case(label string, thenDo ...Event) SwitchCase {
 /* CreateStubProgram : pass in a list of events and file name to generate
  * a go stub file which links the events and converts them to Session Types
  */
-func CreateStubProgram(events []Event, fileName string) {
+func CreateStubProgram(fileName string, events ...Event) {
 	root := link(events)
 
 	outFile, err := os.Create(fileName + ".go.stub")
