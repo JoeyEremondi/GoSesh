@@ -24,18 +24,6 @@ func TestSend(test *testing.T) {
 	test.Log(send)
 }
 
-func TestReceive(test *testing.T) {
-	channel := mockup.Channel{
-		Name:        "testchannel",
-		Source:      "A",
-		Destination: "B"}
-
-	message := mockup.MessageType{Type: "int"}
-
-	receive := mockup.Receive(channel, message)
-	test.Log(receive)
-}
-
 /*
 func TestLocalBranchingType(test *testing.T) {
 	channel := mockup.Channel{Name: "testchannel"}

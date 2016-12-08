@@ -2,48 +2,150 @@
 package main
 
 import (
+	"net"
 	"os"
-	"github.com/JoeyEremondi/GoSesh/dynamic"
 
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+	"github.com/JoeyEremondi/GoSesh/multiparty"
 )
+
+func handleError(e error){
+	if e != nil{
+			panic(e)
+	}
+}
+
+var PROTOCOL string =  "udp"
+var BUFFERSIZE int = 1000000
+
+// calls this function to set it up
+// ConnectNode : Set up a connection for a node
+func ConnectNode(laddress string) *net.UDPConn {
+	laddressUDP, addrError := net.ResolveUDPAddr(PROTOCOL, laddress)
+	handleError(addrError)
+
+	conn, connError := net.ListenUDP(PROTOCOL, laddressUDP)
+	handleError(connError)
+	conn.SetReadBuffer(BUFFERSIZE)
+
+	return conn
+}
+
+
+
+//Higher order function: takes in a (possibly empty) map of addresses for channels
+//Then returns the function which looks up the address for that channel (if it exists)
+//And does the write
+func makeChannelWriter(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte, *net.UDPAddr) (int, error)){
+	return func(p dynamic.Participant, b []byte, addr *net.UDPAddr) (int, error){
+		//TODO get addr from map!
+		return conn.WriteToUDP(b, addr)
+	}
+}
+
+func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte) (int, *net.UDPAddr, error)){
+	return func(p dynamic.Participant, b []byte) (int, *net.UDPAddr, error){
+		return conn.ReadFromUDP(b)
+	}
+}
 
 func main(){
 	argsWithoutProg := os.Args[1:]
 	
-if argsWithoutProg[1] == "--A"{
-	A_main(argsWithoutProg[2:])
+if argsWithoutProg[0] == "B"{
+	node_B_main(argsWithoutProg[1:])
 }
 			
-if argsWithoutProg[1] == "--B"{
-	B_main(argsWithoutProg[2:])
+if argsWithoutProg[0] == "C"{
+	node_C_main(argsWithoutProg[1:])
+}
+			
+if argsWithoutProg[0] == "A"{
+	node_A_main(argsWithoutProg[1:])
 }
 			
 }
 
-func A_main(args []string){
-	var checker dynamic.Checker
+func node_B_main(args []string){
+	conn := ConnectNode("B")
+	checker := dynamic.CreateChecker("B", multiparty.LocalReceiveType{Participant:"A", Value:"int", Next:multiparty.LocalSendType{Participant:"C", Value:"int", Next:multiparty.LocalEndType{}}})
+	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
+	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", p.String())
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(conn, &addrMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
 	
-var sendArg int //TODO put a value here
-sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.channels["fromAtoB"].Write, sendBuf)
-return
-	
-}
-			
-func B_main(args []string){
-	var checker dynamic.Checker
-	
-var recvBuf []byte
-checker.Read(checker.channels["fromAtoB"].Read, recvBuf)
-var receivedValue int
+	recvBuf := make([]byte, 1024)
+	checker.ReadFromUDP("A", readFun, recvBuf)
+	var receivedValue int
 checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
-
-var sendArg int //TODO put a value here
-sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-checker.Write(checker.channels["fromBtoC"].Write, sendBuf)
-return
 	
+	var sendArg int //TODO put a value here
+	sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+	checker.WriteToUDP("C", writeFun, sendBuf, addrMaker)
+	return
+		
+		
+}
+			
+func node_C_main(args []string){
+	conn := ConnectNode("C")
+	checker := dynamic.CreateChecker("C", multiparty.LocalReceiveType{Participant:"B", Value:"int", Next:multiparty.LocalEndType{}})
+	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
+	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", p.String())
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(conn, &addrMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
 	
+	recvBuf := make([]byte, 1024)
+	checker.ReadFromUDP("B", readFun, recvBuf)
+	var receivedValue int
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	return
+		
+}
+			
+func node_A_main(args []string){
+	conn := ConnectNode("A")
+	checker := dynamic.CreateChecker("A", multiparty.LocalSendType{Participant:"B", Value:"int", Next:multiparty.LocalEndType{}})
+	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
+	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", p.String())
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(conn, &addrMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
+	
+	var sendArg int //TODO put a value here
+	sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+	checker.WriteToUDP("B", writeFun, sendBuf, addrMaker)
+	return
+		
 }
 			
 	

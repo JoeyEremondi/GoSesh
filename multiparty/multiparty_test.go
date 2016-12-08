@@ -1,11 +1,6 @@
 package multiparty
 
-import (
-	"go/format"
-	"os"
-	"testing"
-	//"github.com/JoeyEremondi/GoSesh/multiparty"
-)
+//"github.com/JoeyEremondi/GoSesh/multiparty"
 
 //
 // var BoolValue = func() []Sort {
@@ -135,6 +130,7 @@ import (
 // 	})
 // }
 
+/*
 func TestBasicStub(test *testing.T) {
 
 	ourMap := map[string]GlobalType{
@@ -166,3 +162,4 @@ func TestBasicStub(test *testing.T) {
 	//println(string(formatted))
 	goodFile.WriteString(string(formatted))
 }
+*/
