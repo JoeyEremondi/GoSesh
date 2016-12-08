@@ -110,6 +110,57 @@ func Switch(channel Channel, branches ...SwitchCase) Event {
 	return Event{wrappedType: retFun}
 }
 
+//Create a named loop, that we can control using Continue() and Break()
+//Note that all branches have an implicit Break() if Continue() is not specified
+func Loop(label string, bodyEvents ...Event) Event {
+	//We pipe the recursive variable as the thing to do next
+	//Looping explicitly until we see a break
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		return multiparty.RecursiveType{
+			Bind: multiparty.NameType(label),
+			Body: linkWithType(bodyEvents, nextType)}
+	}
+	return Event{wrappedType: retFun}
+}
+
+//Break from the current innermost loop
+func Break() Event {
+	//Does nothing, is just for nice syntax
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		return nextType
+	}
+	return Event{wrappedType: retFun}
+}
+
+//Jump back to the start of the loop with the given name
+func Continue(label string) Event {
+	//Since this is a GOTO, it ignores whatever the "next" thing is
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		if false {
+			return nextType
+		} //UNused
+		return multiparty.NameType(label)
+	}
+	return Event{wrappedType: retFun}
+}
+
+//Run the given events in parallel
+//TODO don't attach doNext to a branch?
+func Parallel(events ...Event) Event {
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		if len(events) == 0 {
+			return nextType
+		} else {
+			parSoFar := events[0].wrappedType(nextType)
+			for _, event := range events[1:] {
+				parSoFar = multiparty.MakeParallelType(parSoFar, event.wrappedType(multiparty.EndType{}))
+			}
+			return parSoFar
+		}
+	}
+	return Event{wrappedType: retFun}
+}
+
 //Receive : wrap a Global Type into an Event for receive channel
 /*
 func Receive(channel Channel, messageType MessageType) Event {
@@ -137,10 +188,10 @@ func Receive(channel Channel, messageType MessageType) Event {
 /* EventList : sequential list of events in a protocol stub
  * In Session Type theory, this is a nested linked list
  */
-func linkWithType(events []Event, startType multiparty.GlobalType) multiparty.GlobalType {
+func linkWithType(events []Event, endType multiparty.GlobalType) multiparty.GlobalType {
 	//Iterate from the back of our array, build up a single type
 	//By passing our currentType to the next function waiting for its "doNext" type
-	currentType := startType
+	currentType := endType
 	for i := len(events) - 1; i >= 0; i-- {
 		currentType = events[i].wrappedType(currentType)
 	}

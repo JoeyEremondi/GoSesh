@@ -444,6 +444,10 @@ type ParallelType struct {
 	a, b GlobalType
 }
 
+func MakeParallelType(a GlobalType, b GlobalType) ParallelType {
+	return ParallelType{a, b}
+}
+
 func (t ParallelType) channels() ChannelSet {
 	return append(t.a.channels(), t.b.channels()...)
 }
