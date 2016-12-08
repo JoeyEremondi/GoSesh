@@ -35,6 +35,7 @@ type Event struct {
 	wrappedType func(multiparty.GlobalType) multiparty.GlobalType
 }
 
+//Use these to make the branches of a Switch statement
 type Case struct {
 	Label  string
 	ThenDo Event
