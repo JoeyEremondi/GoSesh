@@ -29,8 +29,15 @@ type MessageType struct {
 
 // Event : Wraps a value type
 type Event struct {
-	// In Session Type theory, this is the Value Type
-	wrappedValueType multiparty.ValueType
+	// In Session Type theory, this is the "Value" Type
+	// Representing a message being sent and received
+	//We store this as a function waiting for whatever thing type "does next"
+	wrappedType func(multiparty.GlobalType) multiparty.GlobalType
+}
+
+type Case struct {
+	Label  string
+	ThenDo Event
 }
 
 /* CreateStubProgram : pass in a list of events and file name to generate
@@ -64,17 +71,20 @@ func Send(channel Channel, messageType MessageType) Event {
 
 	sort := multiparty.Sort(messageType.Type)
 
-	valueType := multiparty.ValueType{
-		ValuePrefix: prefix,
-		Value:       sort,
-		ValueNext:   multiparty.EndType{}}
+	valueType := func(endType multiparty.GlobalType) multiparty.GlobalType {
+		return multiparty.ValueType{
+			ValuePrefix: prefix,
+			Value:       sort,
+			ValueNext:   endType}
+	}
 
-	send := Event{wrappedValueType: valueType}
+	send := Event{wrappedType: valueType}
 
 	return send
 }
 
 //Receive : wrap a Global Type into an Event for receive channel
+/*
 func Receive(channel Channel, messageType MessageType) Event {
 	participant1 := multiparty.Participant(channel.Destination)
 	participant2 := multiparty.Participant(channel.Source)
@@ -95,18 +105,23 @@ func Receive(channel Channel, messageType MessageType) Event {
 	receive := Event{wrappedValueType: valueType}
 
 	return receive
-}
+} */
 
 /* EventList : sequential list of events in a protocol stub
  * In Session Type theory, this is a nested linked list
  */
 func link(events []Event) multiparty.GlobalType {
 
-	// Iterate through the list of events and place them into nested GlobalTypes
-	for i := 0; i < len(events)-1; i++ {
-		events[i].wrappedValueType.ValueNext = events[i+1].wrappedValueType
-	}
-	rootValueType := events[0].wrappedValueType
+	//Things get a little more complicated when we have Branching and Parallel types
+	//We start at the back of our list of events, accumulating the current "doNext" value
+	//When we see a Send type, we make our accum its next, and make it our accum
+	//When we see a branching type, we make our accum the next of each branch
+	//When we see a parallel type, TODO
 
-	return rootValueType
+	// Iterate through the list of events and place them into nested GlobalTypes
+	var currentType multiparty.GlobalType = multiparty.EndType{}
+	for i := len(events) - 1; i >= 0; i-- {
+		currentType = events[i].wrappedType(currentType)
+	}
+	return currentType
 }
