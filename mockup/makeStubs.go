@@ -7,7 +7,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"strings"
 
 	"github.com/JoeyEremondi/GoSesh/multiparty"
 	"golang.org/x/tools/go/ast/astutil"
@@ -80,10 +79,6 @@ func defaultLabelAndCases(branches map[string]multiparty.LocalType) (string, str
 	return ourLabel, caseStrings
 }
 
-func addQuotes(s multiparty.Participant) string {
-	return fmt.Sprintf(`"%s"`, s)
-}
-
 //Stubs for each syntactic variant
 func stub(tGeneric multiparty.LocalType) string {
 	switch t := tGeneric.(type) {
@@ -98,9 +93,9 @@ func stub(tGeneric multiparty.LocalType) string {
 		return fmt.Sprintf(`
 	var sendArg %s //TODO put a value here
 	sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-	checker.WriteToUDP(%s, writeFun, sendBuf, addrMaker)
+	checker.WriteToUDP("%s", writeFun, sendBuf, addrMaker)
 	%s
-		`, t.Value, addQuotes(t.Participant), stub(t.Next))
+		`, t.Value, t.Channel, stub(t.Next))
 
 	//////////////////////////////
 	case multiparty.LocalReceiveType:
@@ -112,10 +107,10 @@ func stub(tGeneric multiparty.LocalType) string {
 		//Serialize each argument, then do the send, and whatever comes after
 		return fmt.Sprintf(`
 	recvBuf := make([]byte, 1024)
-	checker.ReadFromUDP(%s, readFun, recvBuf)
+	checker.ReadFromUDP("%s", readFun, recvBuf)
 	%s
 	%s
-		`, addQuotes(t.Participant), assignmentString, stub(t.Next))
+		`, t.Channel, assignmentString, stub(t.Next))
 
 	//////////////////////////////
 	case multiparty.LocalBranchingType:
@@ -128,7 +123,7 @@ func stub(tGeneric multiparty.LocalType) string {
 		//In our code, set the label value to default, then branch based on the label value
 		return fmt.Sprintf(`
 	ourBuf := make([]byte, 1024)
-	checker.ReadFromUDP(%s, readFun, ourBuf)
+	checker.ReadFromUDP("%s", readFun, ourBuf)
 	var receivedLabel string
 	checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 	switch receivedLabel{
@@ -136,7 +131,7 @@ func stub(tGeneric multiparty.LocalType) string {
 	default:
 		panic("Invalid label sent at selection choice")
 	}
-			`, addQuotes(t.Participant), caseStrings)
+			`, t.Channel, caseStrings)
 
 	//////////////////////////////
 	case multiparty.LocalSelectionType:
@@ -150,13 +145,13 @@ func stub(tGeneric multiparty.LocalType) string {
 		return fmt.Sprintf(`
 	var labelToSend = "%s" //TODO which label to send
 	buf := checker.PrepareSend("TODO Select message", labelToSend)
-	checker.WriteToUDP(%s, writeFun, buf, addrMaker)
+	checker.WriteToUDP("%s", writeFun, buf, addrMaker)
 	switch labelToSend{
 		%s
 	default:
 		panic("Invalid label sent at selection choice")
 	}
-			`, ourLabel, addQuotes(t.Participant), caseStrings)
+			`, ourLabel, t.Channel, caseStrings)
 
 	//////////////////////////////
 	case multiparty.LocalNameType:
@@ -198,7 +193,6 @@ func GenerateProgram(t multiparty.GlobalType) string {
 	}
 
 	for part, _ := range seenParticipants {
-		nodeName := "node_" + strings.Replace(strings.Replace(string(part), ":", "__", 1), ".", "_", 3)
 		fmt.Printf("Participant %s\n", part)
 		fmt.Printf("Adding Participant %s\n", part)
 		seenParticipants[part] = true
@@ -206,7 +200,7 @@ func GenerateProgram(t multiparty.GlobalType) string {
 if argsWithoutProg[0] == "%s"{
 	%s_main(argsWithoutProg[1:])
 }
-			`, part, nodeName)
+			`, part, part)
 
 		ourProjection, err := t.Project(part)
 		if err != nil {
@@ -214,29 +208,40 @@ if argsWithoutProg[0] == "%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
-	localType, err := topGlobalType.Project(%s)
+	localType, err := topGlobalType.Project("%s")
 	if err != nil {
 		panic(err)
 	}
-	conn := ConnectNode(%s)
-	checker := dynamic.CreateChecker(%s, localType)
-	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
-	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
+	allRecvChannels := mockup.FindReceivingChannels(localType)
+	if len(allRecvChannels) == 0{
+		//TODO is this bad?
+		panic("This party never does a receive! We have no IP address.")
+	}
+	conn := ConnectNode(string(allRecvChannels[0]))
+
+	connMap := make(map[multiparty.Channel]*net.UDPConn)
+	for _,ch := range allRecvChannels{
+		connMap[ch] = ConnectNode(string(ch))
+	}
+
+	checker := dynamic.CreateChecker("%s", localType)
+	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
+	addrMaker := func(p multiparty.Channel)*net.UDPAddr{
 		addr, ok := addrMap[p]
 		if ok && addr != nil {
 			return addr
 		} else {
-			addr, _ := net.ResolveUDPAddr("udp", p.String())
+			addr, _ := net.ResolveUDPAddr("udp", string(p))
 			//TODO check err
 			addrMap[p] = addr
 			return addr
 		}
 	}
-	readFun := makeChannelReader(conn, &addrMap)
+	readFun := makeChannelReader(&connMap)
 	writeFun := makeChannelWriter(conn, &addrMap)
 	%s
 }
-			`, nodeName, addQuotes(part), addQuotes(part), addQuotes(part), stub(ourProjection))
+			`, part, part, part, stub(ourProjection))
 	}
 	return fmt.Sprintf(`
 var topGlobalType multiparty.GlobalType
@@ -274,16 +279,16 @@ func ConnectNode(laddress string) *net.UDPConn {
 //Higher order function: takes in a (possibly empty) map of addresses for channels
 //Then returns the function which looks up the address for that channel (if it exists)
 //And does the write
-func makeChannelWriter(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte, *net.UDPAddr) (int, error)){
-	return func(p dynamic.Participant, b []byte, addr *net.UDPAddr) (int, error){
+func makeChannelWriter(conn *net.UDPConn, addrMap *map[multiparty.Channel]*net.UDPAddr)(func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)){
+	return func(p multiparty.Channel, b []byte, addr *net.UDPAddr) (int, error){
 		//TODO get addr from map!
 		return conn.WriteToUDP(b, addr)
 	}
 }
 
-func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.UDPAddr)(func(dynamic.Participant, []byte) (int, *net.UDPAddr, error)){
-	return func(p dynamic.Participant, b []byte) (int, *net.UDPAddr, error){
-		return conn.ReadFromUDP(b)
+func makeChannelReader(channelMap *map[multiparty.Channel]*net.UDPConn)(func(multiparty.Channel, []byte) (int, *net.UDPAddr, error)){
+	return func(ch multiparty.Channel, b []byte) (int, *net.UDPAddr, error){
+		return (*channelMap)[ch].ReadFromUDP(b)
 	}
 }
 
@@ -298,4 +303,37 @@ func main(){
 }
 %s
 	`, participantCases, participantFunctions)
+}
+
+func FindReceivingChannels(tGeneric multiparty.LocalType) []multiparty.Channel {
+	switch t := tGeneric.(type) {
+
+	case multiparty.LocalSendType:
+		return FindReceivingChannels(t.Next)
+	case multiparty.LocalReceiveType:
+		return append(FindReceivingChannels(t.Next), t.Channel)
+	case multiparty.LocalBranchingType:
+		return []multiparty.Channel{t.Channel}
+
+	case multiparty.LocalSelectionType:
+		ret := []multiparty.Channel{t.Channel}
+		for _, next := range t.Branches {
+			ret = append(FindReceivingChannels(next), ret...)
+		}
+		return ret
+
+	case multiparty.LocalNameType:
+		return []multiparty.Channel{}
+
+	case multiparty.LocalRecursiveType:
+		return FindReceivingChannels(t.Body)
+
+	case multiparty.LocalEndType:
+		return []multiparty.Channel{}
+
+	case multiparty.ProjectionType:
+		return FindReceivingChannels(t.T)
+
+	}
+	panic(fmt.Sprintf("Invalid local type! %T\n", tGeneric))
 }

@@ -213,9 +213,9 @@ func (t ValueType) Project(p Participant) (LocalType, error) {
 	if err != nil {
 		return nil, err
 	} else if t.ValuePrefix.P1 == p {
-		ans = LocalSendType{Participant: t.ValuePrefix.P2, Value: t.Value, Next: ans}
+		ans = LocalSendType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
 	} else if t.ValuePrefix.P2 == p {
-		ans = LocalReceiveType{Participant: t.ValuePrefix.P1, Value: t.Value, Next: ans}
+		ans = LocalReceiveType{Channel: t.ValuePrefix.PChannel, Value: t.Value, Next: ans}
 	}
 	return ans, err
 }
@@ -299,9 +299,9 @@ func (b BranchingType) Project(p Participant) (LocalType, error) {
 	}
 
 	if b.BranchPrefix.P1 == p {
-		return LocalSelectionType{Participant: b.BranchPrefix.P2, Branches: branches}, nil
+		return LocalSelectionType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
 	} else if b.BranchPrefix.P2 == p {
-		return LocalBranchingType{Participant: b.BranchPrefix.P1, Branches: branches}, nil
+		return LocalBranchingType{Channel: b.BranchPrefix.PChannel, Branches: branches}, nil
 	} else if unique(branches) {
 		for _, branch := range branches {
 			return branch, nil
@@ -701,9 +701,9 @@ func findProjection(participant Participant, projections []ProjectionType) (Proj
 }
 
 type LocalSendType struct {
-	Participant Participant
-	Value       Sort
-	Next        LocalType
+	Channel Channel
+	Value   Sort
+	Next    LocalType
 }
 
 func (t LocalSendType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -716,15 +716,15 @@ func (t LocalSendType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalSendType:
 		lt := l.(LocalSendType)
-		return t.Participant == lt.Participant && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
+		return t.Channel == lt.Channel && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalReceiveType struct {
-	Participant Participant
-	Value       Sort
-	Next        LocalType
+	Channel Channel
+	Value   Sort
+	Next    LocalType
 }
 
 func (t LocalReceiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -737,15 +737,15 @@ func (t LocalReceiveType) Equals(l LocalType) bool {
 	switch l.(type) {
 	case LocalReceiveType:
 		lt := l.(LocalReceiveType)
-		return t.Participant == lt.Participant && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
+		return t.Channel == lt.Channel && (t.Value == lt.Value) && t.Next.Equals(lt.Next)
 	}
 	return false
 }
 
 type LocalSelectionType struct {
 	// k \oplus
-	Participant Participant
-	Branches    map[string]LocalType
+	Channel  Channel
+	Branches map[string]LocalType
 }
 
 func (t LocalSelectionType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -765,15 +765,15 @@ func (t LocalSelectionType) Equals(l LocalType) bool {
 				return false
 			}
 		}
-		return t.Participant == lt.Participant
+		return t.Channel == lt.Channel
 	}
 	return false
 }
 
 type LocalBranchingType struct {
 	// k &
-	Participant Participant
-	Branches    map[string]LocalType
+	Channel  Channel
+	Branches map[string]LocalType
 }
 
 func (t LocalBranchingType) Substitute(u LocalNameType, tsub LocalType) LocalType {
@@ -793,7 +793,7 @@ func (t LocalBranchingType) Equals(l LocalType) bool {
 				return false
 			}
 		}
-		return t.Participant == lt.Participant
+		return t.Channel == lt.Channel
 	}
 	return false
 }
