@@ -15,7 +15,7 @@ func MakeLoopStub() {
 		Source:      "B",
 		Destination: "A"}
 
-	mockup.CreateStubProgram("ABCExample",
+	mockup.CreateStubProgram("loopUntilGood.go", "ABCExample",
 		mockup.Loop("testLoop",
 			mockup.Send(channelAToB, mockup.MessageType{Type: "int"}),
 			mockup.Switch(channelBToA,

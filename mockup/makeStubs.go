@@ -10,7 +10,25 @@ import (
 	"strings"
 
 	"github.com/JoeyEremondi/GoSesh/multiparty"
+	"golang.org/x/tools/go/ast/astutil"
 )
+
+func modifiedFileString(infile string, imports ...string) string {
+	fset := token.NewFileSet() // positions are relative to fset
+	f, err := parser.ParseFile(fset, infile, nil, 0)
+	if err != nil {
+		panic(err)
+	}
+	modifyMain(f)
+
+	for _, i := range imports {
+		astutil.AddImport(fset, f, i)
+	}
+
+	var buf bytes.Buffer
+	printer.Fprint(&buf, fset, f)
+	return buf.String()
+}
 
 func modifyMain(n ast.Node) {
 	ast.Inspect(n, func(argNode ast.Node) bool {
@@ -21,15 +39,19 @@ func modifyMain(n ast.Node) {
 				innerN.Name.Name = "makeGlobal"
 			}
 
-		case *ast.SelectorExpr:
-			switch pkgIdent := innerN.X.(type) {
-			case *ast.Ident:
-				if pkgIdent.Name == "mockup" && innerN.Sel.Name == "CreateStubProgram" {
-					innerN.Sel.Name = "setGlobalType"
-					pkgIdent.Name = "main"
+		case *ast.CallExpr:
+			switch selExpr := innerN.Fun.(type) {
+			case *ast.SelectorExpr:
+				switch pkgIdent := selExpr.X.(type) {
+				case *ast.Ident:
+					if pkgIdent.Name == "mockup" && selExpr.Sel.Name == "CreateStubProgram" {
+						innerN.Fun = &ast.Ident{NamePos: pkgIdent.Pos(), Name: "setGlobalType", Obj: nil}
+						innerN.Args = innerN.Args[2:]
+
+					}
+				default:
+					return true
 				}
-			default:
-				return true
 			}
 
 		default:
@@ -37,18 +59,6 @@ func modifyMain(n ast.Node) {
 		}
 		return true
 	})
-}
-
-func main() {
-	fset := token.NewFileSet() // positions are relative to fset
-	f, err := parser.ParseFile(fset, "../example/loopUntilGood/loopUntilGood.go", nil, 0)
-	if err != nil {
-		panic(err)
-	}
-	modifyMain(f)
-	var buf bytes.Buffer
-	printer.Fprint(&buf, fset, f)
-	println(buf.String())
 }
 
 //Used for both selection and branching
@@ -225,15 +235,13 @@ func %s_main(args []string){
 			`, nodeName, addQuotes(part), addQuotes(part), ourProjection, stub(ourProjection))
 	}
 	return fmt.Sprintf(`
-package main
+var topGlobalType multiparty.GlobalType
 
-import (
-	"net"
-	"os"
+func setGlobalType(events ...mockup.Event){
+	topGlobalType = mockup.Link(events...)
+}
 
-	"github.com/JoeyEremondi/GoSesh/dynamic"
-	"github.com/JoeyEremondi/GoSesh/multiparty"
-)
+
 
 func handleError(e error){
 	if e != nil{
@@ -277,6 +285,11 @@ func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.
 
 func main(){
 	argsWithoutProg := os.Args[1:]
+	
+	if len(argsWithoutProg) < 1 {
+		panic("Need to give an argument for which node to run!")
+	}
+
 	%s
 }
 %s

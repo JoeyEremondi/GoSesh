@@ -48,18 +48,26 @@ func Case(label string, thenDo ...Event) SwitchCase {
 /* CreateStubProgram : pass in a list of events and file name to generate
  * a go stub file which links the events and converts them to Session Types
  */
-func CreateStubProgram(fileName string, events ...Event) {
-	root := link(events)
+func CreateStubProgram(infile string, outfile string, events ...Event) {
+	root := Link(events...)
 
-	outFile, err := os.Create(fileName + ".go.stub")
+	outFile, err := os.Create(outfile + ".go.stub")
 	if err != nil {
 		fmt.Println("STUB GENERATION ERROR: ", err)
 	}
 	defer outFile.Close()
 
-	program := GenerateProgram(root)
+	initialProgram := modifiedFileString(infile,
+		"github.com/JoeyEremondi/GoSesh/multiparty",
+		"github.com/JoeyEremondi/GoSesh/dynamic",
+		"github.com/JoeyEremondi/GoSesh/mockup",
+		"os",
+		"net",
+	)
 
-	outFile.WriteString(program)
+	programLogic := GenerateProgram(root)
+
+	outFile.WriteString(initialProgram + "\n" + programLogic)
 }
 
 //Helper function: make a prefix from a channel
@@ -207,6 +215,12 @@ func linkWithType(events []Event, endType multiparty.GlobalType) multiparty.Glob
 	return currentType
 }
 
-func link(events []Event) multiparty.GlobalType {
+func Link(events ...Event) multiparty.GlobalType {
 	return linkWithType(events, multiparty.EndType{})
+}
+
+func setGlobalType(ptr *multiparty.GlobalType, infile string, outfile string, types ...Event) {
+	*ptr = Link(types...)
+	if infile == outfile {
+	}
 }
