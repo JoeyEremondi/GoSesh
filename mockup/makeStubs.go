@@ -35,7 +35,7 @@ func modifyMain(n ast.Node) {
 		//Rename our main, so we can add a different main
 		case *ast.FuncDecl:
 			if innerN.Name.String() == "main" {
-				innerN.Name.Name = "makeGlobal"
+				innerN.Name.Name = "makeGlobalType"
 			}
 
 		case *ast.CallExpr:
@@ -218,10 +218,13 @@ func %s_main(args []string){
 		//TODO is this bad?
 		panic("This party never does a receive! We have no IP address.")
 	}
-	conn := ConnectNode(string(allRecvChannels[0]))
-
 	connMap := make(map[multiparty.Channel]*net.UDPConn)
-	for _,ch := range allRecvChannels{
+
+	firstChan := allRecvChannels[0]
+	conn := ConnectNode(string(firstChan))
+	connMap[firstChan] = conn
+
+	for _,ch := range allRecvChannels[1:]{
 		connMap[ch] = ConnectNode(string(ch))
 	}
 
@@ -294,6 +297,8 @@ func makeChannelReader(channelMap *map[multiparty.Channel]*net.UDPConn)(func(mul
 }
 
 func main(){
+	makeGlobalType()
+
 	argsWithoutProg := os.Args[1:]
 
 	if len(argsWithoutProg) < 1 {

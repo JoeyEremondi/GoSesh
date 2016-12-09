@@ -6,12 +6,12 @@ import "github.com/JoeyEremondi/GoSesh/mockup"
 func main() {
 
 	channelAToB := mockup.Channel{
-		Name:        "fromAtoB",
+		Name:        "127.0.0.1:24602",
 		Source:      "A",
 		Destination: "B"}
 
 	channelBToA := mockup.Channel{
-		Name:        "fromBtoA",
+		Name:        "127.0.0.1:24601",
 		Source:      "B",
 		Destination: "A"}
 
