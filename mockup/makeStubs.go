@@ -214,8 +214,12 @@ if argsWithoutProg[0] == "%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
+	localType, err := topGlobalType.Project(%s)
+	if err != nil {
+		panic(err)
+	}
 	conn := ConnectNode(%s)
-	checker := dynamic.CreateChecker(%s, %#v)
+	checker := dynamic.CreateChecker(%s, localType)
 	addrMap := make(map[dynamic.Participant]*net.UDPAddr)
 	addrMaker := func(p dynamic.Participant)*net.UDPAddr{
 		addr, ok := addrMap[p]
@@ -232,7 +236,7 @@ func %s_main(args []string){
 	writeFun := makeChannelWriter(conn, &addrMap)
 	%s
 }
-			`, nodeName, addQuotes(part), addQuotes(part), ourProjection, stub(ourProjection))
+			`, nodeName, addQuotes(part), addQuotes(part), addQuotes(part), stub(ourProjection))
 	}
 	return fmt.Sprintf(`
 var topGlobalType multiparty.GlobalType
@@ -285,7 +289,7 @@ func makeChannelReader(conn *net.UDPConn, addrMap *map[dynamic.Participant]*net.
 
 func main(){
 	argsWithoutProg := os.Args[1:]
-	
+
 	if len(argsWithoutProg) < 1 {
 		panic("Need to give an argument for which node to run!")
 	}
