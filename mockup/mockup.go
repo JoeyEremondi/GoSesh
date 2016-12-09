@@ -63,6 +63,7 @@ func CreateStubProgram(infile string, outfile string, events ...Event) {
 		"github.com/JoeyEremondi/GoSesh/mockup",
 		"os",
 		"net",
+		"fmt",
 	)
 
 	programLogic := GenerateProgram(root)

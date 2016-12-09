@@ -197,8 +197,9 @@ func GenerateProgram(t multiparty.GlobalType) string {
 		fmt.Printf("Adding Participant %s\n", part)
 		seenParticipants[part] = true
 		participantCases += fmt.Sprintf(`
-if argsWithoutProg[0] == "%s"{
+if argsWithoutProg[0] == "--%s"{
 	%s_main(argsWithoutProg[1:])
+	return
 }
 			`, part, part)
 
@@ -300,6 +301,7 @@ func main(){
 	}
 
 	%s
+	panic(fmt.Sprintf("Invalid node argument %%s provided", argsWithoutProg[0]))
 }
 %s
 	`, participantCases, participantFunctions)

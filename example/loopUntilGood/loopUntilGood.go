@@ -3,7 +3,7 @@ package main
 import "github.com/JoeyEremondi/GoSesh/mockup"
 
 // ASendToBThenBToC : A sends an int message to B, B sends the message to C
-func MakeLoopStub() {
+func main() {
 
 	channelAToB := mockup.Channel{
 		Name:        "fromAtoB",
@@ -15,21 +15,17 @@ func MakeLoopStub() {
 		Source:      "B",
 		Destination: "A"}
 
-	mockup.CreateStubProgram("loopUntilGood.go", "ABCExample",
+	mockup.CreateStubProgram("loopUntilGood.go", "gen/ABCExample",
 		mockup.Loop("testLoop",
 			mockup.Send(channelAToB, mockup.MessageType{Type: "int"}),
 			mockup.Switch(channelBToA,
-				mockup.Case("intIsGood",
-					mockup.Break(),
-				),
 				mockup.Case("intIsBad",
 					mockup.Continue("testLoop"),
+				),
+				mockup.Case("intIsGood",
+					mockup.Break(),
 				),
 			),
 		),
 	)
-}
-
-func main() {
-	MakeLoopStub()
 }
