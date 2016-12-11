@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/JoeyEremondi/GoSesh/multiparty"
+	"github.com/arcaneiceman/GoVector/capture"
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
@@ -16,7 +17,15 @@ type Checker struct {
 	currentType      multiparty.LocalType
 	expectedSortType multiparty.Sort
 	currentLabel     *string
-	channels         map[string]*net.Conn
+	//TODO other stuff handy to have here?
+}
+
+func CreateChecker(id string, t multiparty.LocalType) Checker {
+	ret := Checker{govec.Initialize(id, "TODOLogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
+	//make sure we start with a type we can deal with
+	ret.unfoldIfRecursive()
+	ret.setInitialSort()
+	return ret
 }
 
 //Unfold any top-level recursive types, if they're the current type
@@ -31,6 +40,16 @@ func (checker *Checker) unfoldIfRecursive() {
 		default:
 			return
 		}
+	}
+}
+
+func (checker *Checker) setInitialSort() {
+	switch t := checker.currentType.(type) {
+	//Send and receive: just progress to the "next" type
+	case multiparty.LocalSendType:
+		checker.expectedSortType = t.Value
+	case multiparty.LocalReceiveType:
+		checker.expectedSortType = t.Value
 	}
 }
 
@@ -164,11 +183,110 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 		panic(fmt.Sprintf("Unknown type in PrepareSend %s", t))
 	}
 
+	return gvBuffer
+
+}
+
+//Make sure the given channel matches the channel of the current type
+func (checker *Checker) checkRecvChannel(c multiparty.Channel) {
+	switch t := checker.currentType.(type) {
+	case multiparty.LocalReceiveType:
+		if t.Channel != c {
+			panic(fmt.Sprintf("Expected to receive on channel %s, but was given %s", t.Channel, c))
+		}
+	case multiparty.LocalBranchingType:
+		if t.Channel != c {
+			panic(fmt.Sprintf("Expected to receive on channel %s, but was given %s", t.Channel, c))
+		}
+	default:
+		//TODO say what was expected
+		panic("Cannot do a receive on a non-receive localType")
+	}
+}
+
+//Same, but for sends
+func (checker *Checker) checkSendChannel(c multiparty.Channel) {
+	switch t := checker.currentType.(type) {
+	case multiparty.LocalSendType:
+		if t.Channel != c {
+			panic(fmt.Sprintf("Expected to send to channel %s, but was given %s", t.Channel, c))
+		}
+	case multiparty.LocalSelectionType:
+		if t.Channel != c {
+			panic(fmt.Sprintf("Expected to send to channel %s, but was given %s", t.Channel, c))
+		}
+	default:
+		//TODO say what was expected
+		panic("Cannot do a send on a non-send localType")
+	}
+}
+
+//Wrappers around GoVector functions
+//Not much interesting happens, except that we have an extra parameter for the channel
+//both in our wrapper, and in the function the user gives us
+
+func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
+	checker.checkRecvChannel(c)
 	// Now that we're done, advance our type to whatever we do next
 	err := checker.advanceType()
-	if err == nil {
-		return gvBuffer
-
+	if err != nil {
+		panic(err)
 	}
-	panic(err)
+	curriedRead := func([]byte) (int, error) { return read(c, b) }
+	return capture.Read(curriedRead, b)
+}
+
+func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Channel, b []byte) (int, error), b []byte) (int, error) {
+	checker.checkSendChannel(c)
+	// Now that we're done, advance our type to whatever we do next
+	err := checker.advanceType()
+	if err != nil {
+		panic(err)
+	}
+	curriedWrite := func(b []byte) (int, error) { return write(c, b) }
+	return capture.Write(curriedWrite, b)
+}
+
+func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
+	checker.checkRecvChannel(c)
+	// Now that we're done, advance our type to whatever we do next
+	err := checker.advanceType()
+	if err != nil {
+		panic(err)
+	}
+	curriedRead := func(b []byte) (int, net.Addr, error) { return readFrom(c, b) }
+	return capture.ReadFrom(curriedRead, b)
+}
+
+func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, net.Addr) (int, error), b []byte, addrMaker func(multiparty.Channel) net.Addr) (int, error) {
+	checker.checkSendChannel(c)
+	// Now that we're done, advance our type to whatever we do next
+	err := checker.advanceType()
+	if err != nil {
+		panic(err)
+	}
+	curriedWrite := func(b []byte, a net.Addr) (int, error) { return writeTo(c, b, a) }
+	return capture.WriteTo(curriedWrite, b, addrMaker(c))
+}
+
+func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error) {
+	checker.checkRecvChannel(c)
+	// Now that we're done, advance our type to whatever we do next
+	err := checker.advanceType()
+	if err != nil {
+		panic(err)
+	}
+	curriedRead := func(b []byte) (int, *net.UDPAddr, error) { return readFrom(c, b) }
+	return capture.ReadFromUDP(curriedRead, b)
+}
+
+func (checker *Checker) WriteToUDP(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, *net.UDPAddr) (int, error), b []byte, addrMaker func(multiparty.Channel) *net.UDPAddr) (int, error) {
+	checker.checkSendChannel(c)
+	// Now that we're done, advance our type to whatever we do next
+	err := checker.advanceType()
+	if err != nil {
+		panic(err)
+	}
+	curriedWrite := func(b []byte, a *net.UDPAddr) (int, error) { return writeTo(c, b, a) }
+	return capture.WriteToUDP(curriedWrite, b, addrMaker(c))
 }
