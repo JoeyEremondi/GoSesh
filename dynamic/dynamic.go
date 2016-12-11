@@ -3,37 +3,29 @@ package dynamic
 import (
 	"fmt"
 	"net"
+	"reflect"
 
 	"github.com/JoeyEremondi/GoSesh/multiparty"
-	"github.com/arcaneiceman/GoVector/capture"
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
-//Store the "current" type in the computation
+//Checker : Store the "current" type in the computation
 //so that we can ensure each network operation preserves its
 type Checker struct {
-	gv           *govec.GoLog
-	currentType  multiparty.LocalType
-	currentLabel *string
-	//TODO other stuff handy to have here?
-}
-
-func CreateChecker(id string, t multiparty.LocalType) Checker {
-	ret := Checker{govec.Initialize(id, "TODOLogFile.txt"), t, nil}
-	//make sure we start with a type we can deal with
-	ret.unfoldIfRecurisve()
-	return ret
+	gv               *govec.GoLog
+	currentType      multiparty.LocalType
+	expectedSortType multiparty.Sort
+	currentLabel     *string
+	channels         map[string]*net.Conn
 }
 
 //Unfold any top-level recursive types, if they're the current type
 //Otherwise, do nothing
-func (checker *Checker) unfoldIfRecurisve() {
+func (checker *Checker) unfoldIfRecursive() {
 	for {
 		switch t := checker.currentType.(type) {
 		case multiparty.LocalRecursiveType:
-			//fmt.Printf("Current type before unfolding: %#v\n", checker.currentType)
 			checker.currentType = t.UnfoldOneLevel()
-			//fmt.Printf("Current type after unfolding: %#v\n", checker.currentType)
 			//Check if there's nested recursion by looping again
 			continue
 		default:
@@ -51,13 +43,14 @@ func (checker *Checker) advanceType() error {
 	//Send and receive: just progress to the "next" type
 	case multiparty.LocalSendType:
 		checker.currentType = t.Next
+		checker.expectedSortType = t.Value
 
 	case multiparty.LocalReceiveType:
 		checker.currentType = t.Next
+		checker.expectedSortType = t.Value
 
 	//Branch and select: what type we progress to depends on the label that was
 	//sent or received, so we use that to choose the next type
-
 	case multiparty.LocalBranchingType:
 		if checker.currentLabel != nil {
 			checker.currentType = t.Branches[*checker.currentLabel]
@@ -81,11 +74,11 @@ func (checker *Checker) advanceType() error {
 		panic("Missing a case for session types! Means recursion probably was improperly removed")
 	}
 	//Finally, unroll any recursion types that we have at the top level
-	checker.unfoldIfRecurisve()
+	checker.unfoldIfRecursive()
 	return nil
 }
 
-//Wrapper around GoVector's pack and unpack functions
+//UnpackReceive : Wrapper around GoVector's pack and unpack functions
 //These are where we check to make sure that the correct type is the current type
 //i.e. don't send on a receive, etc.
 func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
@@ -96,7 +89,14 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 	//Make sure we're in a receive or a branch
 	switch t := checker.currentType.(type) {
 	case multiparty.LocalReceiveType:
-		//TODO check that it's the right Go type (the right sort)
+		// Check that the interface type is the correct Sort for the send/receive pair
+		interfaceType := reflect.TypeOf(unpack).String()
+		sortType := reflect.ValueOf(checker.expectedSortType).String()
+
+		if sortType != interfaceType {
+			panic(fmt.Sprintf("Invalid sort type in PrepareSend, is %s should be %s",
+				sortType, interfaceType))
+		}
 	case multiparty.LocalBranchingType:
 		//Make sure that what was sent was a label (string)
 		//And that it is one of the labels of our current type
@@ -104,19 +104,20 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		case *string:
 			_, ok := t.Branches[*unpackString]
 			if !ok {
-				errString := fmt.Sprintf("Received invalid label %s at branching point, should be one of \n", *unpackString)
-				for k, _ := range t.Branches {
-					errString += k + ", "
-				}
-				panic(errString)
+				panic(fmt.Sprintf(
+					"Received invalid label %s at branching point, should be one of TODO",
+					*unpackString))
 			}
 
 		default:
-			panic(fmt.Sprintf("Unpacking data of the wrong type at a Branching point. Should be a *string, but is %T", unpack))
+			panic("Unpacking data of the wrong type at a Branching point. Should be a string")
 		}
-	default:
+
+	case multiparty.LocalSendType:
 		panic("Tried to do send on receive type")
 
+	default:
+		panic(fmt.Sprintf("Unknown type in UnpackReceive %s", t))
 	}
 
 	//Now that we're done, advance our type to whatever we do next
@@ -126,82 +127,48 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 	}
 }
 
-//The sending version
-func (checker *Checker) PrepareSend(mesg string, buf interface{}) []byte {
-
-	//Do the GoVector unpack
-	ret := checker.gv.PrepareSend(mesg, buf)
-
-	//Make sure we're in a receive or a branch
+// PrepareSend : Prepare a send with GoVector
+// Check that the send has a matching receive and that it contains the
+// correct types
+func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
+	// Fill the buffer with contents of message
+	gvBuffer := checker.gv.PrepareSend(msg, buf)
+	// Make sure we're in a send or a branch
 	switch t := checker.currentType.(type) {
+	// Check that the interface passed in the correct Sort for the send/receive pair
 	case multiparty.LocalSendType:
-		//Nothing to do here, we're good
+		interfaceType := reflect.TypeOf(buf).String()
+		sortType := reflect.ValueOf(checker.expectedSortType).String()
+
+		if sortType != interfaceType {
+			panic(fmt.Sprintf("Invalid sort type in PrepareSend, is %s should be %s", sortType, interfaceType))
+		}
+
 	case multiparty.LocalSelectionType:
-		//Make sure that what was sent was a label (string)
-		//And that it is one of the labels of our current type
+		// Make sure that what was sent was a label (string)
+		// And that it is one of the labels of our current type
 		switch unpackString := buf.(type) {
 		case *string:
 			_, ok := t.Branches[*unpackString]
 			if !ok {
-				errString := fmt.Sprintf("Received invalid label %s at branching point, should be one of \n", *unpackString)
-				for k, _ := range t.Branches {
-					errString += k + ", "
-				}
-				panic(errString)
-			}
-
-		case string:
-			_, ok := t.Branches[unpackString]
-			if !ok {
-				errString := fmt.Sprintf("Received invalid label %s at branching point, should be one of \n", unpackString)
-				for k, _ := range t.Branches {
-					errString += k + ", "
-				}
-				panic(errString)
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
 			}
 
 		default:
-			panic(fmt.Sprintf("Unpacking data of the wrong type at a Selection point. Should be a string or *string, but is %T", unpackString))
+			panic("Unpacking data of the wrong type at a Selection point. Should be a string")
 		}
-	default:
-		panic(fmt.Sprintf("Tried to do send on receive type. "))
+	case multiparty.LocalReceiveType:
+		panic("Tried to do receive on send type")
 
+	default:
+		panic(fmt.Sprintf("Unknown type in PrepareSend %s", t))
 	}
 
-	//Now that we're done, advance our type to whatever we do next
+	// Now that we're done, advance our type to whatever we do next
 	err := checker.advanceType()
 	if err == nil {
-		return ret
+		return gvBuffer
+
 	}
 	panic(err)
-}
-
-func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
-	curriedRead := func([]byte) (int, error) { return read(c, b) }
-	return capture.Read(curriedRead, b)
-}
-
-func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Channel, b []byte) (int, error), b []byte) (int, error) {
-	curriedWrite := func(b []byte) (int, error) { return write(c, b) }
-	return capture.Write(curriedWrite, b)
-}
-
-func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
-	curriedRead := func(b []byte) (int, net.Addr, error) { return readFrom(c, b) }
-	return capture.ReadFrom(curriedRead, b)
-}
-
-func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, net.Addr) (int, error), b []byte, addrMaker func(multiparty.Channel) net.Addr) (int, error) {
-	curriedWrite := func(b []byte, a net.Addr) (int, error) { return writeTo(c, b, a) }
-	return capture.WriteTo(curriedWrite, b, addrMaker(c))
-}
-
-func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error) {
-	curriedRead := func(b []byte) (int, *net.UDPAddr, error) { return readFrom(c, b) }
-	return capture.ReadFromUDP(curriedRead, b)
-}
-
-func (checker *Checker) WriteToUDP(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, *net.UDPAddr) (int, error), b []byte, addrMaker func(multiparty.Channel) *net.UDPAddr) (int, error) {
-	curriedWrite := func(b []byte, a *net.UDPAddr) (int, error) { return writeTo(c, b, a) }
-	return capture.WriteToUDP(curriedWrite, b, addrMaker(c))
 }
