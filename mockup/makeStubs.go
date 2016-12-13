@@ -91,9 +91,11 @@ func stub(tGeneric multiparty.LocalType) string {
 
 		//Serialize each argument, then do the send, and whatever comes after
 		return fmt.Sprintf(`
-	var sendArg %s //TODO put a value here
-	sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
-	checker.WriteToUDP("%s", writeFun, sendBuf, addrMaker)
+	if true{
+		var sendArg %s //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("%s", writeFun, sendBuf, addrMaker)
+	}
 	%s
 		`, t.Value, t.Channel, stub(t.Next))
 
@@ -106,9 +108,11 @@ func stub(tGeneric multiparty.LocalType) string {
 		assignmentString += "checker.UnpackReceive(\"TODO unpack message\", recvBuf, &receivedValue)"
 		//Serialize each argument, then do the send, and whatever comes after
 		return fmt.Sprintf(`
-	recvBuf := make([]byte, 1024)
-	checker.ReadFromUDP("%s", readFun, recvBuf)
-	%s
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("%s", readFun, recvBuf)
+		%s
+	}
 	%s
 		`, t.Channel, assignmentString, stub(t.Next))
 
@@ -122,14 +126,16 @@ func stub(tGeneric multiparty.LocalType) string {
 
 		//In our code, set the label value to default, then branch based on the label value
 		return fmt.Sprintf(`
-	ourBuf := make([]byte, 1024)
-	checker.ReadFromUDP("%s", readFun, ourBuf)
-	var receivedLabel string
-	checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
-	switch receivedLabel{
-		%s
-	default:
-		panic("Invalid label sent at selection choice")
+	if true{
+		ourBuf := make([]byte, 1024)
+		checker.ReadFromUDP("%s", readFun, ourBuf)
+		var receivedLabel string
+		checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+		switch receivedLabel{
+			%s
+		default:
+			panic("Invalid label sent at selection choice")
+		}
 	}
 			`, t.Channel, caseStrings)
 
@@ -143,13 +149,15 @@ func stub(tGeneric multiparty.LocalType) string {
 
 		//In our code, set the label value to default, then branch based on the label value
 		return fmt.Sprintf(`
-	var labelToSend = "%s" //TODO which label to send
-	buf := checker.PrepareSend("TODO Select message", labelToSend)
-	checker.WriteToUDP("%s", writeFun, buf, addrMaker)
-	switch labelToSend{
-		%s
-	default:
-		panic("Invalid label sent at selection choice")
+	if true{
+		var labelToSend = "%s" //TODO which label to send
+		buf := checker.PrepareSend("TODO Select message", labelToSend)
+		checker.WriteToUDP("%s", writeFun, buf, addrMaker)
+		switch labelToSend{
+			%s
+		default:
+			panic("Invalid label sent at selection choice")
+		}
 	}
 			`, ourLabel, t.Channel, caseStrings)
 
@@ -284,7 +292,7 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 	}
 	readFun := makeChannelReader(&connMap)
 	writeFun := makeChannelWriter(conn, &addrMap)
-	return checker, readFun, writeFun
+	return checker, addrMaker, readFun, writeFun
 }
 
 
