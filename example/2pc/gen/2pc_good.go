@@ -128,7 +128,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 			return addr
 		} else {
 			addr, _ := net.ResolveUDPAddr("udp", string(p))
-			//TODO check err
 			addrMap[p] = addr
 			return addr
 		}
@@ -143,7 +142,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 //And does the write
 func makeChannelWriter(conn *net.UDPConn, addrMap *map[multiparty.Channel]*net.UDPAddr) func(multiparty.Channel, []byte, *net.UDPAddr) (int, error) {
 	return func(p multiparty.Channel, b []byte, addr *net.UDPAddr) (int, error) {
-		//TODO get addr from map!
 		return conn.WriteToUDP(b, addr)
 	}
 }
@@ -183,37 +181,6 @@ func main() {
 	panic(fmt.Sprintf("Invalid node argument %s provided", argsWithoutProg[0]))
 }
 
-func C_main(args []string) {
-	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("C")
-
-	startCommitBuf := make([]byte, 1024)
-	checker.ReadFromUDP("127.0.0.1:24603", readFun, recvBuf)
-	var startCommitMsg int
-	checker.UnpackReceive("TODO unpack message", startCommitBuf, &startCommitMsg)
-
-	var labelToSend string
-	//Randomly choose if we commit or not
-	if (rand.Int() % 2) == 0 {
-		labelToSend = "C-Fail"
-	} else {
-		labelToSend = "C-Commit"
-
-		labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
-		checker.WriteToUDP("127.0.0.1:24601", writeFun, labelBuf, addrMaker)
-
-		shouldCommitBuf := make([]byte, 1024)
-		checker.ReadFromUDP("127.0.0.1:24603", readFun, shouldCommitBuf)
-		var shouldCommit bool
-		checker.UnpackReceive("Unpacked A's final answer", shouldCommitBuf, &shouldCommit)
-		if receivedValue {
-			println("C Comitted")
-		} else {
-			println("C Aborted")
-		}
-	}
-
-}
-
 func A_main(args []string) {
 	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("A")
 
@@ -229,8 +196,7 @@ func A_main(args []string) {
 	case "B-Fail":
 
 		//We still have to get our message from C, even though we will abort
-		var cStartMsg int = 0
-		cStartBuf := checker.PrepareSend("Sending C Commit Req", cStartMsg)
+		cStartBuf := checker.PrepareSend("Sending C Commit Req", 0)
 		checker.WriteToUDP("127.0.0.1:24603", writeFun, cStartBuf, addrMaker)
 
 		cResponseBuf := make([]byte, 1024)
@@ -256,14 +222,13 @@ func A_main(args []string) {
 		checker.ReadFromUDP("127.0.0.1:24601", readFun, cResponseBuf)
 		var cResponse string
 		checker.UnpackReceive("Unpacking Response from C", cResponseBuf, &cResponse)
-		switch receivedLabel {
+		switch cResponse {
 
 		case "C-Commit":
 
 			bCommitBuf := checker.PrepareSend("Telling B To Commit", true)
 			checker.WriteToUDP("127.0.0.1:24602", writeFun, bCommitBuf, addrMaker)
 
-			var sendArg bool = true
 			cCommitBuf := checker.PrepareSend("Telling C to Commit", true)
 			checker.WriteToUDP("127.0.0.1:24603", writeFun, cCommitBuf, addrMaker)
 
@@ -294,9 +259,9 @@ func B_main(args []string) {
 	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("B")
 
 	startCommitBuf := make([]byte, 1024)
-	checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
+	checker.ReadFromUDP("127.0.0.1:24602", readFun, startCommitBuf)
 	var startCommitMsg int
-	checker.UnpackReceive("TODO unpack message", startCommitBuf, &startCommitMsg)
+	checker.UnpackReceive("Got message from A requesting Commit Phase 1", startCommitBuf, &startCommitMsg)
 
 	var labelToSend string
 	//Randomly choose if we commit or not
@@ -304,19 +269,50 @@ func B_main(args []string) {
 		labelToSend = "B-Fail"
 	} else {
 		labelToSend = "B-Commit"
+	}
 
-		labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
-		checker.WriteToUDP("127.0.0.1:24601", writeFun, labelBuf, addrMaker)
+	labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
+	checker.WriteToUDP("127.0.0.1:24601", writeFun, labelBuf, addrMaker)
 
-		shouldCommitBuf := make([]byte, 1024)
-		checker.ReadFromUDP("127.0.0.1:24602", readFun, shouldCommitBuf)
-		var shouldCommit bool
-		checker.UnpackReceive("Unpacked A's final answer", shouldCommitBuf, &shouldCommit)
-		if receivedValue {
-			println("B Comitted")
-		} else {
-			println("B Aborted")
-		}
+	shouldCommitBuf := make([]byte, 1024)
+	checker.ReadFromUDP("127.0.0.1:24602", readFun, shouldCommitBuf)
+	var shouldCommit bool
+	checker.UnpackReceive("Unpacked A's final answer", shouldCommitBuf, &shouldCommit)
+	if shouldCommit {
+		println("B Comitted")
+	} else {
+		println("B Aborted")
+	}
+
+}
+
+func C_main(args []string) {
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("C")
+
+	startCommitBuf := make([]byte, 1024)
+	checker.ReadFromUDP("127.0.0.1:24603", readFun, startCommitBuf)
+	var startCommitMsg int
+	checker.UnpackReceive("Got message from A requesting Commit Phase 1", startCommitBuf, &startCommitMsg)
+
+	var labelToSend string
+	//Randomly choose if we commit or not
+	if (rand.Int() % 2) == 0 {
+		labelToSend = "C-Fail"
+	} else {
+		labelToSend = "C-Commit"
+	}
+
+	labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
+	checker.WriteToUDP("127.0.0.1:24601", writeFun, labelBuf, addrMaker)
+
+	shouldCommitBuf := make([]byte, 1024)
+	checker.ReadFromUDP("127.0.0.1:24603", readFun, shouldCommitBuf)
+	var shouldCommit bool
+	checker.UnpackReceive("Unpacked A's final answer", shouldCommitBuf, &shouldCommit)
+	if shouldCommit {
+		println("C Comitted")
+	} else {
+		println("C Aborted")
 	}
 
 }
