@@ -99,24 +99,27 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 	func(multiparty.Channel, []byte) (int, *net.UDPAddr, error),
 	func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)) {
 
-	localType, err := topGlobalType.Project(multiparty.Participant(part))
-	if err != nil {
-		panic(err)
-	}
-	allRecvChannels := mockup.FindReceivingChannels(localType)
-	if len(allRecvChannels) == 0{
-		//TODO is this bad?
-		panic("This party never does a receive! We have no IP address.")
-	}
-	connMap := make(map[multiparty.Channel]*net.UDPConn)
+		localType, err := topGlobalType.Project(multiparty.Participant(part))
+		if err != nil {
+			panic(err)
+		}
+		allRecvChannels := make(map[multiparty.Channel]bool)
+		mockup.FindReceivingChannels(localType, &allRecvChannels)
 
-	firstChan := allRecvChannels[0]
-	conn := ConnectNode(string(firstChan))
-	connMap[firstChan] = conn
+		connMap := make(map[multiparty.Channel]*net.UDPConn)
 
-	for _,ch := range allRecvChannels[1:]{
-		connMap[ch] = ConnectNode(string(ch))
-	}
+		var firstChan multiparty.Channel
+		var conn *net.UDPConn
+		areFirst := true
+
+		for ch, _ := range allRecvChannels {
+			if areFirst {
+				areFirst = false
+				firstChan = ch
+				conn = ConnectNode(string(firstChan))
+			}
+			connMap[ch] = ConnectNode(string(ch))
+		}
 
 	checker := dynamic.CreateChecker(part, localType)
 	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
@@ -193,12 +196,12 @@ checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 	}
 	
 	if true{
-		var labelToSend = "C-Fail" //TODO which label to send
+		var labelToSend = "C-Commit" //TODO which label to send
 		buf := checker.PrepareSend("TODO Select message", labelToSend)
 		checker.WriteToUDP("127.0.0.1:24601", writeFun, buf, addrMaker)
 		switch labelToSend{
 			
-	case "C-Fail":
+	case "C-Commit":
 		
 	if true{
 		recvBuf := make([]byte, 1024)
@@ -210,7 +213,7 @@ checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 		
 
 			
-	case "C-Commit":
+	case "C-Fail":
 		
 	if true{
 		recvBuf := make([]byte, 1024)
@@ -261,7 +264,7 @@ func A_main(args []string){
 		checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 		switch receivedLabel{
 			
-	case "C-Fail":
+	case "C-Commit":
 		
 	if true{
 		var sendArg string //TODO put a value here
@@ -279,7 +282,7 @@ func A_main(args []string){
 		
 
 			
-	case "C-Commit":
+	case "C-Fail":
 		
 	if true{
 		var sendArg string //TODO put a value here
@@ -320,7 +323,7 @@ func A_main(args []string){
 		checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
 		switch receivedLabel{
 			
-	case "C-Commit":
+	case "C-Fail":
 		
 	if true{
 		var sendArg string //TODO put a value here
@@ -338,7 +341,7 @@ func A_main(args []string){
 		
 
 			
-	case "C-Fail":
+	case "C-Commit":
 		
 	if true{
 		var sendArg string //TODO put a value here
