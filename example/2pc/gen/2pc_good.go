@@ -115,7 +115,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 		if areFirst {
 			areFirst = false
 			conn = connMap[ch]
-			conn = connMap[ch]
 		}
 
 	}

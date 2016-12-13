@@ -352,7 +352,6 @@ func FindReceivingChannels(tGeneric multiparty.LocalType, outMap *map[multiparty
 		return
 
 	case multiparty.LocalSelectionType:
-		(*outMap)[t.Channel] = true
 		for _, next := range t.Branches {
 			FindReceivingChannels(next, outMap)
 		}

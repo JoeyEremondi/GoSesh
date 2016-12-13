@@ -162,7 +162,7 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 	switch t := checker.currentType.(type) {
 	// Check that the interface passed in the correct Sort for the send/receive pair
 	case multiparty.LocalSendType:
-		interfaceType := reflect.TypeOf(buf).Elem().String()
+		interfaceType := reflect.TypeOf(buf).String()
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
@@ -177,6 +177,12 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 			_, ok := t.Branches[*unpackString]
 			if !ok {
 				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
+			}
+
+		case string:
+			_, ok := t.Branches[unpackString]
+			if !ok {
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", unpackString))
 			}
 
 		default:
