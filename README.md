@@ -2,6 +2,13 @@
 
 The aim of this project is to help increase knowledge about session types from the *Multiparty asynchronous session types* paper at POPL 2008 (Honda et al. 2008). GoSesh provides an accessible way for programmers to increase safety in their distributed systems code using session types and dynamic type checking. Our implementation provides a mockup DSL to model simple session types. While the model is still fairly limited, it provides a solid foundation for more complex session types to be implemented. 
 
+In addition to the mockup capabilities, we also provide dynamic checking of session types,
+through a wrapper around the [GoVector](https://github.com/arcaneiceman/GoVector) library. The generated logs can be viewed with [ShiViz](http://bestchai.bitbucket.org/shiviz/).
+
+The GoDocs can be found at [http://eremondi.com/GoSesh/godoc/GoSesh/](http://eremondi.com/GoSesh/godoc/GoSesh/).
+
+This project builds on [work by Felipe Bañados](https://github.com/fbanados/sessions).
+
 ## dynamic
 
 This package contains the dynamic checker that ensures that the current session type matches the specification.
