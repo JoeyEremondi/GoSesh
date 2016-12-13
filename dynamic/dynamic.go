@@ -10,8 +10,11 @@ import (
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
-//Checker : Store the "current" type in the computation
-//so that we can ensure each network operation preserves its
+//Checker : Stores the "current" session type in the computation.
+//When network calls are made through the checker, they are checked
+//against its type. It will panic if messages are of the wrong type,
+//if sends and receives are mixed up or to the wrong party,
+//or if sent labels are incorrect.
 type Checker struct {
 	gv               *govec.GoLog
 	currentType      multiparty.LocalType
@@ -20,6 +23,9 @@ type Checker struct {
 	//TODO other stuff handy to have here?
 }
 
+//Create a checker with the given id (participant name)
+//and (local) session type.
+//GoVector logs are stored in ID_LogFile.txt, where ID is the value of id
 func CreateChecker(id string, t multiparty.LocalType) Checker {
 	ret := Checker{govec.Initialize(id, id+"_LogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
 	//make sure we start with a type we can deal with
@@ -45,6 +51,8 @@ func (checker *Checker) unfoldIfRecursive() {
 	}
 }
 
+//Look at the current type, and if it's a send or receive
+//Store sort (message type) in a checker variable
 func (checker *Checker) setExpectedSort() {
 	switch t := checker.currentType.(type) {
 	//Send and receive: just progress to the "next" type
@@ -98,8 +106,8 @@ func (checker *Checker) advanceType() error {
 }
 
 //UnpackReceive : Wrapper around GoVector's pack and unpack functions
-//These are where we check to make sure that the correct type is the current type
-//i.e. don't send on a receive, etc.
+//Checks that the current session type is expecting a recieve,
+//and that the message is unpacked into the correct type
 func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{}) {
 
 	//Do the GoVector unpack
@@ -163,8 +171,8 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 }
 
 // PrepareSend : Prepare a send with GoVector
-// Check that the send has a matching receive and that it contains the
-// correct types
+// Check that the current session type is expecting a send,
+// and that the given value has the correct type
 func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 	// Fill the buffer with contents of message
 	gvBuffer := checker.gv.PrepareSend(msg, buf)
@@ -228,7 +236,7 @@ func (checker *Checker) checkRecvChannel(c multiparty.Channel) {
 	}
 }
 
-//Same, but for sends
+//Make sure the given channel matches the channel of the current type
 func (checker *Checker) checkSendChannel(c multiparty.Channel) {
 	switch t := checker.currentType.(type) {
 	case multiparty.LocalSendType:
@@ -245,10 +253,9 @@ func (checker *Checker) checkSendChannel(c multiparty.Channel) {
 	}
 }
 
-//Wrappers around GoVector functions
-//Not much interesting happens, except that we have an extra parameter for the channel
-//both in our wrapper, and in the function the user gives us
-
+//A wrapper around the GoVector function of the same name.
+//The function takes the channel (ip:port) being read from, and a callback which performs the correct network operation
+//from the given channel.
 func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
 	checker.checkRecvChannel(c)
 
@@ -256,6 +263,9 @@ func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel,
 	return capture.Read(curriedRead, b)
 }
 
+//A wrapper around the GoVector function of the same name.
+//The function takes the channel (ip:port) being sent to, and a callback which performs the correct network operation
+//from the given channel.
 func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Channel, b []byte) (int, error), b []byte) (int, error) {
 	checker.checkSendChannel(c)
 	// Now that we're done, advance our type to whatever we do next
@@ -267,6 +277,9 @@ func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Chan
 	return capture.Write(curriedWrite, b)
 }
 
+//A wrapper around the GoVector function of the same name.
+//The function takes the channel (ip:port) being read from, and a callback which performs the correct network operation
+//from the given channel.
 func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
 	checker.checkRecvChannel(c)
 
@@ -274,6 +287,9 @@ func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.
 	return capture.ReadFrom(curriedRead, b)
 }
 
+//A wrapper around the GoVector function of the same name.
+//The function takes the channel (ip:port) being sent to, and a callback which performs the correct network operation
+//from the given channel.
 func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, net.Addr) (int, error), b []byte, addrMaker func(multiparty.Channel) net.Addr) (int, error) {
 	checker.checkSendChannel(c)
 	// Now that we're done, advance our type to whatever we do next
@@ -285,6 +301,9 @@ func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Ch
 	return capture.WriteTo(curriedWrite, b, addrMaker(c))
 }
 
+//A wrapper around the GoVector function of the same name.
+//The function takes the channel (ip:port) being read from, and a callback which performs the correct network operation
+//from the given channel.
 func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error) {
 	checker.checkRecvChannel(c)
 
@@ -292,6 +311,9 @@ func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multipar
 	return capture.ReadFromUDP(curriedRead, b)
 }
 
+//A wrapper around the GoVector function of the same name.
+//The function takes the channel (ip:port) being sent to, and a callback which performs the correct network operation
+//from the given channel.
 func (checker *Checker) WriteToUDP(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, *net.UDPAddr) (int, error), b []byte, addrMaker func(multiparty.Channel) *net.UDPAddr) (int, error) {
 	checker.checkSendChannel(c)
 	// Now that we're done, advance our type to whatever we do next
