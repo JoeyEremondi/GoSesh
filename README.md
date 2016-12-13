@@ -1,0 +1,1 @@
+This is the godoc for the GoSesh project.
