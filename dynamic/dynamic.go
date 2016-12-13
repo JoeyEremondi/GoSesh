@@ -21,10 +21,9 @@ type Checker struct {
 }
 
 func CreateChecker(id string, t multiparty.LocalType) Checker {
-	ret := Checker{govec.Initialize(id, "TODOLogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
+	ret := Checker{govec.Initialize(id, id+"_LogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
 	//make sure we start with a type we can deal with
 	ret.unfoldIfRecursive()
-	ret.setInitialSort()
 	return ret
 }
 
@@ -38,12 +37,15 @@ func (checker *Checker) unfoldIfRecursive() {
 			//Check if there's nested recursion by looping again
 			continue
 		default:
+			//When we're done, set the sort we're expecting in the next message
+			//if it's a send or receive
+			checker.setExpectedSort()
 			return
 		}
 	}
 }
 
-func (checker *Checker) setInitialSort() {
+func (checker *Checker) setExpectedSort() {
 	switch t := checker.currentType.(type) {
 	//Send and receive: just progress to the "next" type
 	case multiparty.LocalSendType:
@@ -62,11 +64,9 @@ func (checker *Checker) advanceType() error {
 	//Send and receive: just progress to the "next" type
 	case multiparty.LocalSendType:
 		checker.currentType = t.Next
-		checker.expectedSortType = t.Value
 
 	case multiparty.LocalReceiveType:
 		checker.currentType = t.Next
-		checker.expectedSortType = t.Value
 
 	//Branch and select: what type we progress to depends on the label that was
 	//sent or received, so we use that to choose the next type
@@ -109,12 +109,12 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 	switch t := checker.currentType.(type) {
 	case multiparty.LocalReceiveType:
 		// Check that the interface type is the correct Sort for the send/receive pair
-		interfaceType := reflect.TypeOf(unpack).String()
+		interfaceType := reflect.TypeOf(unpack).Elem().String()
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
-			panic(fmt.Sprintf("Invalid sort type in PrepareSend, is %s should be %s",
-				sortType, interfaceType))
+			panic(fmt.Sprintf("Wrong type for message data in UnpackReceive, given %s expected %s",
+				interfaceType, sortType))
 		}
 	case multiparty.LocalBranchingType:
 		//Make sure that what was sent was a label (string)
@@ -122,10 +122,20 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		switch unpackString := unpack.(type) {
 		case *string:
 			_, ok := t.Branches[*unpackString]
+			checker.currentLabel = unpackString
 			if !ok {
 				panic(fmt.Sprintf(
 					"Received invalid label %s at branching point, should be one of TODO",
 					*unpackString))
+			}
+
+		case string:
+			_, ok := t.Branches[unpackString]
+			checker.currentLabel = &unpackString
+			if !ok {
+				panic(fmt.Sprintf(
+					"Received invalid label %s at branching point, should be one of TODO",
+					unpackString))
 			}
 
 		default:
@@ -133,10 +143,16 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		}
 
 	case multiparty.LocalSendType:
-		panic("Tried to do send on receive type")
+		panic("Tried to do receive on send type")
+
+	case multiparty.LocalSelectionType:
+		panic("Tried to do receive on selection type")
+
+	case multiparty.LocalEndType:
+		panic("Tried to do a receive when we should be done communications.")
 
 	default:
-		panic(fmt.Sprintf("Unknown type in UnpackReceive %s", t))
+		panic(fmt.Sprintf("Unknown type %T in UnpackReceive", t))
 	}
 
 	//Now that we're done, advance our type to whatever we do next
@@ -160,7 +176,7 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
-			panic(fmt.Sprintf("Invalid sort type in PrepareSend, is %s should be %s", sortType, interfaceType))
+			panic(fmt.Sprintf("Wrong message type in PrepareSend, given %s expected %s", interfaceType, sortType))
 		}
 
 	case multiparty.LocalSelectionType:
@@ -169,8 +185,16 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 		switch unpackString := buf.(type) {
 		case *string:
 			_, ok := t.Branches[*unpackString]
+			checker.currentLabel = unpackString
 			if !ok {
 				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
+			}
+
+		case string:
+			_, ok := t.Branches[unpackString]
+			checker.currentLabel = &unpackString
+			if !ok {
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", unpackString))
 			}
 
 		default:
@@ -200,7 +224,7 @@ func (checker *Checker) checkRecvChannel(c multiparty.Channel) {
 		}
 	default:
 		//TODO say what was expected
-		panic("Cannot do a receive on a non-receive localType")
+		panic(fmt.Sprintf("Cannot do a receive on non-receive localType %T", t))
 	}
 }
 
@@ -227,11 +251,7 @@ func (checker *Checker) checkSendChannel(c multiparty.Channel) {
 
 func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
 	checker.checkRecvChannel(c)
-	// Now that we're done, advance our type to whatever we do next
-	err := checker.advanceType()
-	if err != nil {
-		panic(err)
-	}
+
 	curriedRead := func([]byte) (int, error) { return read(c, b) }
 	return capture.Read(curriedRead, b)
 }
@@ -249,11 +269,7 @@ func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Chan
 
 func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
 	checker.checkRecvChannel(c)
-	// Now that we're done, advance our type to whatever we do next
-	err := checker.advanceType()
-	if err != nil {
-		panic(err)
-	}
+
 	curriedRead := func(b []byte) (int, net.Addr, error) { return readFrom(c, b) }
 	return capture.ReadFrom(curriedRead, b)
 }
@@ -271,11 +287,7 @@ func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Ch
 
 func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error) {
 	checker.checkRecvChannel(c)
-	// Now that we're done, advance our type to whatever we do next
-	err := checker.advanceType()
-	if err != nil {
-		panic(err)
-	}
+
 	curriedRead := func(b []byte) (int, *net.UDPAddr, error) { return readFrom(c, b) }
 	return capture.ReadFromUDP(curriedRead, b)
 }

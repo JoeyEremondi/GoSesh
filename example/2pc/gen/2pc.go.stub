@@ -1,0 +1,426 @@
+package main
+
+import (
+	"github.com/JoeyEremondi/GoSesh/mockup"
+	"fmt"
+	"net"
+	"os"
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+	"github.com/JoeyEremondi/GoSesh/multiparty"
+)
+
+func makeGlobalType() {
+
+	channelAToB := mockup.Channel{
+		Name:		"127.0.0.1:24602",
+		Source:		"A",
+		Destination:	"B"}
+
+	channelBToA := mockup.Channel{
+		Name:		"127.0.0.1:24601",
+		Source:		"B",
+		Destination:	"A"}
+
+	channelAToC := mockup.Channel{
+		Name:		"127.0.0.1:24603",
+		Source:		"A",
+		Destination:	"C"}
+
+	channelCToA := mockup.Channel{
+		Name:		"127.0.0.1:24601",
+		Source:		"C",
+		Destination:	"A"}
+
+	setGlobalType(
+		mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
+		mockup.Switch(channelBToA,
+			mockup.Case("B-Fail",
+				mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+				mockup.Switch(channelCToA,
+					mockup.Case("C-Fail",
+						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+					),
+					mockup.Case("C-Commit",
+						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+					),
+				),
+			),
+			mockup.Case("B-Commit",
+				mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+				mockup.Switch(channelCToA,
+					mockup.Case("C-Fail",
+						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "string"})),
+					mockup.Case("C-Commit",
+						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+					),
+				),
+			),
+		),
+	)
+}
+
+
+var topGlobalType multiparty.GlobalType
+
+func setGlobalType(events ...mockup.Event){
+	topGlobalType = mockup.Link(events...)
+}
+
+
+
+func handleError(e error){
+	if e != nil{
+			panic(e)
+	}
+}
+
+var PROTOCOL string =  "udp"
+var BUFFERSIZE int = 1000000
+
+// calls this function to set it up
+// ConnectNode : Set up a connection for a node
+func ConnectNode(laddress string) *net.UDPConn {
+	laddressUDP, addrError := net.ResolveUDPAddr(PROTOCOL, laddress)
+	handleError(addrError)
+
+	conn, connError := net.ListenUDP(PROTOCOL, laddressUDP)
+	handleError(connError)
+	conn.SetReadBuffer(BUFFERSIZE)
+
+	return conn
+}
+
+func makeCheckerReaderWriter(part string) (dynamic.Checker,
+	func(multiparty.Channel) *net.UDPAddr,
+	func(multiparty.Channel, []byte) (int, *net.UDPAddr, error),
+	func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)) {
+
+		localType, err := topGlobalType.Project(multiparty.Participant(part))
+		if err != nil {
+			panic(err)
+		}
+		allRecvChannels := make(map[multiparty.Channel]bool)
+		mockup.FindReceivingChannels(localType, &allRecvChannels)
+
+		connMap := make(map[multiparty.Channel]*net.UDPConn)
+
+		var firstChan multiparty.Channel
+		var conn *net.UDPConn
+		areFirst := true
+
+		for ch, _ := range allRecvChannels {
+			if areFirst {
+				areFirst = false
+				firstChan = ch
+				conn = ConnectNode(string(firstChan))
+			}
+			connMap[ch] = ConnectNode(string(ch))
+		}
+
+	checker := dynamic.CreateChecker(part, localType)
+	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
+	addrMaker := func(p multiparty.Channel)*net.UDPAddr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", string(p))
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(&connMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
+	return checker, addrMaker, readFun, writeFun
+}
+
+
+
+//Higher order function: takes in a (possibly empty) map of addresses for channels
+//Then returns the function which looks up the address for that channel (if it exists)
+//And does the write
+func makeChannelWriter(conn *net.UDPConn, addrMap *map[multiparty.Channel]*net.UDPAddr)(func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)){
+	return func(p multiparty.Channel, b []byte, addr *net.UDPAddr) (int, error){
+		//TODO get addr from map!
+		return conn.WriteToUDP(b, addr)
+	}
+}
+
+func makeChannelReader(channelMap *map[multiparty.Channel]*net.UDPConn)(func(multiparty.Channel, []byte) (int, *net.UDPAddr, error)){
+	return func(ch multiparty.Channel, b []byte) (int, *net.UDPAddr, error){
+		return (*channelMap)[ch].ReadFromUDP(b)
+	}
+}
+
+func main(){
+	makeGlobalType()
+
+	argsWithoutProg := os.Args[1:]
+
+	if len(argsWithoutProg) < 1 {
+		panic("Need to give an argument for which node to run!")
+	}
+
+	
+if argsWithoutProg[0] == "--C"{
+	C_main(argsWithoutProg[1:])
+	return
+}
+			
+if argsWithoutProg[0] == "--A"{
+	A_main(argsWithoutProg[1:])
+	return
+}
+			
+if argsWithoutProg[0] == "--B"{
+	B_main(argsWithoutProg[1:])
+	return
+}
+			
+	panic(fmt.Sprintf("Invalid node argument %s provided", argsWithoutProg[0]))
+}
+
+func C_main(args []string){
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("C")
+	
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24603", readFun, recvBuf)
+		var receivedValue string
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	}
+	
+	if true{
+		var labelToSend = "C-Commit" //TODO which label to send
+		buf := checker.PrepareSend("TODO Select message", labelToSend)
+		checker.WriteToUDP("127.0.0.1:24601", writeFun, buf, addrMaker)
+		switch labelToSend{
+			
+	case "C-Commit":
+		
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24603", readFun, recvBuf)
+		var receivedValue string
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	}
+	return
+		
+
+			
+	case "C-Fail":
+		
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24603", readFun, recvBuf)
+		var receivedValue string
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	}
+	return
+		
+
+			
+		default:
+			panic("Invalid label sent at selection choice")
+		}
+	}
+			
+		
+}
+			
+func A_main(args []string){
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("A")
+	
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		ourBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24601", readFun, ourBuf)
+		var receivedLabel string
+		checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+		switch receivedLabel{
+			
+	case "B-Fail":
+		
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		ourBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24601", readFun, ourBuf)
+		var receivedLabel string
+		checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+		switch receivedLabel{
+			
+	case "C-Commit":
+		
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
+	}
+	return
+		
+		
+
+			
+	case "C-Fail":
+		
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
+	}
+	return
+		
+		
+
+			
+		default:
+			panic("Invalid label sent at selection choice")
+		}
+	}
+			
+		
+
+			
+	case "B-Commit":
+		
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		ourBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24601", readFun, ourBuf)
+		var receivedLabel string
+		checker.UnpackReceive("TODO Unpack Message", ourBuf, &receivedLabel)
+		switch receivedLabel{
+			
+	case "C-Fail":
+		
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
+	}
+	return
+		
+		
+
+			
+	case "C-Commit":
+		
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
+	}
+	
+	if true{
+		var sendArg string //TODO put a value here
+		sendBuf := checker.PrepareSend("TODO govec send message", sendArg)
+		checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
+	}
+	return
+		
+		
+
+			
+		default:
+			panic("Invalid label sent at selection choice")
+		}
+	}
+			
+		
+
+			
+		default:
+			panic("Invalid label sent at selection choice")
+		}
+	}
+			
+		
+}
+			
+func B_main(args []string){
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("B")
+	
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
+		var receivedValue string
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	}
+	
+	if true{
+		var labelToSend = "B-Fail" //TODO which label to send
+		buf := checker.PrepareSend("TODO Select message", labelToSend)
+		checker.WriteToUDP("127.0.0.1:24601", writeFun, buf, addrMaker)
+		switch labelToSend{
+			
+	case "B-Fail":
+		
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
+		var receivedValue string
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	}
+	return
+		
+
+			
+	case "B-Commit":
+		
+	if true{
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
+		var receivedValue string
+checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+	}
+	return
+		
+
+			
+		default:
+			panic("Invalid label sent at selection choice")
+		}
+	}
+			
+		
+}
+			
+	
