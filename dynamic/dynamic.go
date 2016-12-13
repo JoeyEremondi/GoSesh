@@ -109,7 +109,7 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 	switch t := checker.currentType.(type) {
 	case multiparty.LocalReceiveType:
 		// Check that the interface type is the correct Sort for the send/receive pair
-		interfaceType := reflect.TypeOf(unpack).String()
+		interfaceType := reflect.TypeOf(unpack).Elem().String()
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
@@ -133,10 +133,16 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		}
 
 	case multiparty.LocalSendType:
-		panic("Tried to do send on receive type")
+		panic("Tried to do receive on send type")
+
+	case multiparty.LocalSelectionType:
+		panic("Tried to do receive on selection type")
+
+	case multiparty.LocalEndType:
+		panic("Tried to do a receive when we should be done communications.")
 
 	default:
-		panic(fmt.Sprintf("Unknown type in UnpackReceive %s", t))
+		panic(fmt.Sprintf("Unknown type %T in UnpackReceive", t))
 	}
 
 	//Now that we're done, advance our type to whatever we do next
@@ -156,7 +162,7 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 	switch t := checker.currentType.(type) {
 	// Check that the interface passed in the correct Sort for the send/receive pair
 	case multiparty.LocalSendType:
-		interfaceType := reflect.TypeOf(buf).String()
+		interfaceType := reflect.TypeOf(buf).Elem().String()
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
@@ -227,11 +233,7 @@ func (checker *Checker) checkSendChannel(c multiparty.Channel) {
 
 func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error) {
 	checker.checkRecvChannel(c)
-	// Now that we're done, advance our type to whatever we do next
-	err := checker.advanceType()
-	if err != nil {
-		panic(err)
-	}
+
 	curriedRead := func([]byte) (int, error) { return read(c, b) }
 	return capture.Read(curriedRead, b)
 }
@@ -249,11 +251,7 @@ func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Chan
 
 func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error) {
 	checker.checkRecvChannel(c)
-	// Now that we're done, advance our type to whatever we do next
-	err := checker.advanceType()
-	if err != nil {
-		panic(err)
-	}
+
 	curriedRead := func(b []byte) (int, net.Addr, error) { return readFrom(c, b) }
 	return capture.ReadFrom(curriedRead, b)
 }
@@ -271,11 +269,7 @@ func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Ch
 
 func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error) {
 	checker.checkRecvChannel(c)
-	// Now that we're done, advance our type to whatever we do next
-	err := checker.advanceType()
-	if err != nil {
-		panic(err)
-	}
+
 	curriedRead := func(b []byte) (int, *net.UDPAddr, error) { return readFrom(c, b) }
 	return capture.ReadFromUDP(curriedRead, b)
 }
