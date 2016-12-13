@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>dynamic - The Go Programming Language</title>
+
+<link type="text/css" rel="stylesheet" href="https://golang.org/lib/godoc/style.css">
+
+<link rel="stylesheet" href="/lib/godoc/jquery.treeview.css">
+<script type="text/javascript">window.initFuncs = [];</script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/">The Go Programming Language</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/">Go</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+<a href="/doc/">Documents</a>
+<a href="/pkg/">Packages</a>
+<a href="/project/">The Project</a>
+<a href="/help/">Help</a>
+<a href="/blog/">Blog</a>
+
+<input type="text" id="search" name="q" class="inactive" value="Search" placeholder="Search">
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>Package dynamic</h1>
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script type='text/javascript'>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+
+
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/JoeyEremondi/GoSesh/dynamic"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+
+
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+
+			</div>
+		</div>
+
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+
+
+
+
+
+				<dd><a href="#Checker">type Checker</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#CreateChecker">func CreateChecker(id string, t multiparty.LocalType) Checker</a></dd>
+
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.PrepareSend">func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.Read">func (checker *Checker) Read(c multiparty.Channel, read func(multiparty.Channel, []byte) (int, error), b []byte) (int, error)</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.ReadFrom">func (checker *Checker) ReadFrom(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, net.Addr, error), b []byte) (int, net.Addr, error)</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.ReadFromUDP">func (checker *Checker) ReadFromUDP(c multiparty.Channel, readFrom func(multiparty.Channel, []byte) (int, *net.UDPAddr, error), b []byte) (int, *net.UDPAddr, error)</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.UnpackReceive">func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{})</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.Write">func (checker *Checker) Write(c multiparty.Channel, write func(c multiparty.Channel, b []byte) (int, error), b []byte) (int, error)</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.WriteTo">func (checker *Checker) WriteTo(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, net.Addr) (int, error), b []byte, addrMaker func(multiparty.Channel) net.Addr) (int, error)</a></dd>
+
+
+					<dd>&nbsp; &nbsp; <a href="#Checker.WriteToUDP">func (checker *Checker) WriteToUDP(c multiparty.Channel, writeTo func(multiparty.Channel, []byte, *net.UDPAddr) (int, error), b []byte, addrMaker func(multiparty.Channel) *net.UDPAddr) (int, error)</a></dd>
+
+
+
+			</dl>
+			</div><!-- #manual-nav -->
+
+
+
+
+			<h4>Package files</h4>
+			<p>
+			<span style="font-size:90%">
+
+				<a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go">dynamic.go</a>
+
+			</span>
+			</p>
+
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		<div id="pkg-callgraph" class="toggle" style="display: none">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Internal Call Graph section">Internal call graph ▹</h2>
+		</div> <!-- .expanded -->
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Internal Call Graph section">Internal call graph ▾</h2>
+			<p>
+			  In the call graph viewer below, each node
+			  is a function belonging to this package
+			  and its children are the functions it
+			  calls&mdash;perhaps dynamically.
+			</p>
+			<p>
+			  The root nodes are the entry points of the
+			  package: functions that may be called from
+			  outside the package.
+			  There may be non-exported or anonymous
+			  functions among them if they are called
+			  dynamically from another package.
+			</p>
+			<p>
+			  Click a node to visit that function's source code.
+			  From there you can visit its callers by
+			  clicking its declaring <code>func</code>
+			  token.
+			</p>
+			<p>
+			  Functions may be omitted if they were
+			  determined to be unreachable in the
+			  particular programs or tests that were
+			  analyzed.
+			</p>
+			<!-- Zero means show all package entry points. -->
+			<ul style="margin-left: 0.5in" id="callgraph-0" class="treeview"></ul>
+		</div>
+		</div> <!-- #pkg-callgraph -->
+
+
+
+
+
+
+
+			<h2 id="Checker">type <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=303:496#L5">Checker</a></h2>
+			<pre>type Checker struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}</pre>
+			<p>
+Checker : Store the &#34;current&#34; type in the computation
+so that we can ensure each network operation preserves its
+</p>
+
+
+
+
+
+
+
+
+
+
+
+
+				<h3 id="CreateChecker">func <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=498:559#L13">CreateChecker</a></h3>
+				<pre>func CreateChecker(id <a href="/pkg/builtin/#string">string</a>, t <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#LocalType">LocalType</a>) <a href="#Checker">Checker</a></pre>
+
+
+
+
+
+
+
+				<h3 id="Checker.PrepareSend">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=4432:4503#L142">PrepareSend</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) PrepareSend(msg <a href="/pkg/builtin/#string">string</a>, buf interface{}) []<a href="/pkg/builtin/#byte">byte</a></pre>
+				<p>
+PrepareSend : Prepare a send with GoVector
+Check that the send has a matching receive and that it contains the
+correct types
+</p>
+
+
+
+
+
+
+				<h3 id="Checker.Read">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=6988:7113#L218">Read</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) Read(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, read func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>), b []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+
+
+
+
+
+
+				<h3 id="Checker.ReadFrom">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=7778:7931#L240">ReadFrom</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) ReadFrom(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, readFrom func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/net/">net</a>.<a href="/pkg/net/#Addr">Addr</a>, <a href="/pkg/builtin/#error">error</a>), b []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/net/">net</a>.<a href="/pkg/net/#Addr">Addr</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+
+
+
+
+
+
+				<h3 id="Checker.ReadFromUDP">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=8704:8868#L262">ReadFromUDP</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) ReadFromUDP(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, readFrom func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, *<a href="/pkg/net/">net</a>.<a href="/pkg/net/#UDPAddr">UDPAddr</a>, <a href="/pkg/builtin/#error">error</a>), b []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, *<a href="/pkg/net/">net</a>.<a href="/pkg/net/#UDPAddr">UDPAddr</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+
+
+
+
+
+
+				<h3 id="Checker.UnpackReceive">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=2913:2995#L93">UnpackReceive</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) UnpackReceive(mesg <a href="/pkg/builtin/#string">string</a>, buf []<a href="/pkg/builtin/#byte">byte</a>, unpack interface{})</pre>
+				<p>
+UnpackReceive : Wrapper around GoVector&#39;s pack and unpack functions
+These are where we check to make sure that the correct type is the current type
+i.e. don&#39;t send on a receive, etc.
+</p>
+
+
+
+
+
+
+				<h3 id="Checker.Write">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=7377:7508#L229">Write</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) Write(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, write func(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, b []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>), b []<a href="/pkg/builtin/#byte">byte</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+
+
+
+
+
+
+				<h3 id="Checker.WriteTo">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=8215:8401#L251">WriteTo</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) WriteTo(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, writeTo func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, []<a href="/pkg/builtin/#byte">byte</a>, <a href="/pkg/net/">net</a>.<a href="/pkg/net/#Addr">Addr</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>), b []<a href="/pkg/builtin/#byte">byte</a>, addrMaker func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>) <a href="/pkg/net/">net</a>.<a href="/pkg/net/#Addr">Addr</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+
+
+
+
+
+
+				<h3 id="Checker.WriteToUDP">func (*Checker) <a href="/src/github.com/JoeyEremondi/GoSesh/dynamic/dynamic.go?s=9159:9356#L273">WriteToUDP</a></h3>
+				<pre>func (checker *<a href="#Checker">Checker</a>) WriteToUDP(c <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, writeTo func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>, []<a href="/pkg/builtin/#byte">byte</a>, *<a href="/pkg/net/">net</a>.<a href="/pkg/net/#UDPAddr">UDPAddr</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>), b []<a href="/pkg/builtin/#byte">byte</a>, addrMaker func(<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>) *<a href="/pkg/net/">net</a>.<a href="/pkg/net/#UDPAddr">UDPAddr</a>) (<a href="/pkg/builtin/#int">int</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.6.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="/doc/tos.html">Terms of Service</a> |
+<a href="http://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+<!-- TODO(adonovan): load these from <head> using "defer" attribute? -->
+<script type="text/javascript" src="/lib/godoc/jquery.js"></script>
+<script type="text/javascript" src="/lib/godoc/jquery.treeview.js"></script>
+<script type="text/javascript" src="/lib/godoc/jquery.treeview.edit.js"></script>
+
+
+<script type="text/javascript" src="/lib/godoc/godocs.js"></script>
+
+</body>
+</html>
