@@ -21,7 +21,7 @@ type Checker struct {
 }
 
 func CreateChecker(id string, t multiparty.LocalType) Checker {
-	ret := Checker{govec.Initialize(id, "TODOLogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
+	ret := Checker{govec.Initialize(id, id+"_LogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
 	//make sure we start with a type we can deal with
 	ret.unfoldIfRecursive()
 	return ret
