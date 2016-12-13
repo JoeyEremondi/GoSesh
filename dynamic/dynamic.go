@@ -212,7 +212,7 @@ func (checker *Checker) checkRecvChannel(c multiparty.Channel) {
 		}
 	default:
 		//TODO say what was expected
-		panic("Cannot do a receive on a non-receive localType")
+		panic(fmt.Sprintf("Cannot do a receive on non-receive localType %T", t))
 	}
 }
 
