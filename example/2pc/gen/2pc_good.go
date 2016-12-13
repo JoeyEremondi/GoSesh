@@ -102,18 +102,21 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 	if err != nil {
 		panic(err)
 	}
-	allRecvChannels := mockup.FindReceivingChannels(localType)
-	if len(allRecvChannels) == 0 {
-		//TODO is this bad?
-		panic("This party never does a receive! We have no IP address.")
-	}
+	allRecvChannels := make(map[multiparty.Channel]bool)
+	mockup.FindReceivingChannels(localType, &allRecvChannels)
+
 	connMap := make(map[multiparty.Channel]*net.UDPConn)
 
-	firstChan := allRecvChannels[0]
-	conn := ConnectNode(string(firstChan))
-	connMap[firstChan] = conn
+	var firstChan multiparty.Channel
+	var conn *net.UDPConn
+	areFirst := true
 
-	for _, ch := range allRecvChannels[1:] {
+	for ch, _ := range allRecvChannels {
+		if areFirst {
+			areFirst = false
+			firstChan = ch
+			conn = ConnectNode(string(firstChan))
+		}
 		connMap[ch] = ConnectNode(string(ch))
 	}
 

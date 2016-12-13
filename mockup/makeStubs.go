@@ -258,24 +258,27 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 	func(multiparty.Channel, []byte) (int, *net.UDPAddr, error),
 	func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)) {
 
-	localType, err := topGlobalType.Project(multiparty.Participant(part))
-	if err != nil {
-		panic(err)
-	}
-	allRecvChannels := mockup.FindReceivingChannels(localType)
-	if len(allRecvChannels) == 0{
-		//TODO is this bad?
-		panic("This party never does a receive! We have no IP address.")
-	}
-	connMap := make(map[multiparty.Channel]*net.UDPConn)
+		localType, err := topGlobalType.Project(multiparty.Participant(part))
+		if err != nil {
+			panic(err)
+		}
+		allRecvChannels := make(map[multiparty.Channel]bool)
+		mockup.FindReceivingChannels(localType, &allRecvChannels)
 
-	firstChan := allRecvChannels[0]
-	conn := ConnectNode(string(firstChan))
-	connMap[firstChan] = conn
+		connMap := make(map[multiparty.Channel]*net.UDPConn)
 
-	for _,ch := range allRecvChannels[1:]{
-		connMap[ch] = ConnectNode(string(ch))
-	}
+		var firstChan multiparty.Channel
+		var conn *net.UDPConn
+		areFirst := true
+
+		for ch, _ := range allRecvChannels {
+			if areFirst {
+				areFirst = false
+				firstChan = ch
+				conn = ConnectNode(string(firstChan))
+			}
+			connMap[ch] = ConnectNode(string(ch))
+		}
 
 	checker := dynamic.CreateChecker(part, localType)
 	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
@@ -329,34 +332,37 @@ func main(){
 	`, participantCases, participantFunctions)
 }
 
-func FindReceivingChannels(tGeneric multiparty.LocalType) []multiparty.Channel {
+func FindReceivingChannels(tGeneric multiparty.LocalType, outMap *map[multiparty.Channel]bool) {
 	switch t := tGeneric.(type) {
 
 	case multiparty.LocalSendType:
-		return FindReceivingChannels(t.Next)
+		FindReceivingChannels(t.Next, outMap)
 	case multiparty.LocalReceiveType:
-		return append(FindReceivingChannels(t.Next), t.Channel)
+		(*outMap)[t.Channel] = true
+		FindReceivingChannels(t.Next, outMap)
 	case multiparty.LocalBranchingType:
-		return []multiparty.Channel{t.Channel}
+		(*outMap)[t.Channel] = true
+		for _, next := range t.Branches {
+			FindReceivingChannels(next, outMap)
+		}
 
 	case multiparty.LocalSelectionType:
-		ret := []multiparty.Channel{t.Channel}
+		(*outMap)[t.Channel] = true
 		for _, next := range t.Branches {
-			ret = append(FindReceivingChannels(next), ret...)
+			FindReceivingChannels(next, outMap)
 		}
-		return ret
 
 	case multiparty.LocalNameType:
-		return []multiparty.Channel{}
+		return
 
 	case multiparty.LocalRecursiveType:
-		return FindReceivingChannels(t.Body)
+		FindReceivingChannels(t.Body, outMap)
 
 	case multiparty.LocalEndType:
-		return []multiparty.Channel{}
+		return
 
 	case multiparty.ProjectionType:
-		return FindReceivingChannels(t.T)
+		FindReceivingChannels(t.T, outMap)
 
 	}
 	panic(fmt.Sprintf("Invalid local type! %T\n", tGeneric))
