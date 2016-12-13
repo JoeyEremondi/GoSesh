@@ -179,6 +179,18 @@ func Sequence(events ...Event) Event {
 	return Event{wrappedType: retFun}
 }
 
+//We can model an empty event using the identity function
+func internalDoNothing() Event {
+	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		return nextType
+	}
+	return Event{wrappedType: retFun}
+}
+
+//Empty event, useful for empty branches
+//Just does whatever comes next
+var DoNothing Event = internalDoNothing()
+
 //Receive : wrap a Global Type into an Event for receive channel
 /*
 func Receive(channel Channel, messageType MessageType) Event {
