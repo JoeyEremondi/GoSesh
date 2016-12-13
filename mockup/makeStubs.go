@@ -337,32 +337,40 @@ func FindReceivingChannels(tGeneric multiparty.LocalType, outMap *map[multiparty
 
 	case multiparty.LocalSendType:
 		FindReceivingChannels(t.Next, outMap)
+		return
+
 	case multiparty.LocalReceiveType:
 		(*outMap)[t.Channel] = true
 		FindReceivingChannels(t.Next, outMap)
+		return
+
 	case multiparty.LocalBranchingType:
 		(*outMap)[t.Channel] = true
 		for _, next := range t.Branches {
 			FindReceivingChannels(next, outMap)
 		}
+		return
 
 	case multiparty.LocalSelectionType:
 		(*outMap)[t.Channel] = true
 		for _, next := range t.Branches {
 			FindReceivingChannels(next, outMap)
 		}
+		return
 
 	case multiparty.LocalNameType:
 		return
 
 	case multiparty.LocalRecursiveType:
 		FindReceivingChannels(t.Body, outMap)
+		return
 
 	case multiparty.LocalEndType:
 		return
 
 	case multiparty.ProjectionType:
 		FindReceivingChannels(t.T, outMap)
+		return
 
 	}
 	panic(fmt.Sprintf("Invalid local type! %T\n", tGeneric))

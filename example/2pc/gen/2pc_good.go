@@ -107,17 +107,17 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 
 	connMap := make(map[multiparty.Channel]*net.UDPConn)
 
-	var firstChan multiparty.Channel
 	var conn *net.UDPConn
 	areFirst := true
 
 	for ch, _ := range allRecvChannels {
+		connMap[ch] = ConnectNode(string(ch))
 		if areFirst {
 			areFirst = false
-			firstChan = ch
-			conn = ConnectNode(string(firstChan))
+			conn = connMap[ch]
+			conn = connMap[ch]
 		}
-		connMap[ch] = ConnectNode(string(ch))
+
 	}
 
 	checker := dynamic.CreateChecker(part, localType)
