@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"time"
 
 	"github.com/JoeyEremondi/GoSesh/dynamic"
 	"github.com/JoeyEremondi/GoSesh/mockup"
@@ -34,30 +35,30 @@ func makeGlobalType() {
 		Destination: "A"}
 
 	setGlobalType(
-		mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
+		mockup.Send(channelAToB, mockup.MessageType{Type: "int"}),
 		mockup.Switch(channelBToA,
 			mockup.Case("B-Fail",
-				mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+				mockup.Send(channelAToC, mockup.MessageType{Type: "int"}),
 				mockup.Switch(channelCToA,
 					mockup.Case("C-Fail",
-						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
-						mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToB, mockup.MessageType{Type: "bool"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "bool"}),
 					),
 					mockup.Case("C-Commit",
-						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
-						mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToB, mockup.MessageType{Type: "bool"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "bool"}),
 					),
 				),
 			),
 			mockup.Case("B-Commit",
-				mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+				mockup.Send(channelAToC, mockup.MessageType{Type: "int"}),
 				mockup.Switch(channelCToA,
 					mockup.Case("C-Fail",
-						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
-						mockup.Send(channelAToC, mockup.MessageType{Type: "string"})),
+						mockup.Send(channelAToB, mockup.MessageType{Type: "bool"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "bool"})),
 					mockup.Case("C-Commit",
-						mockup.Send(channelAToB, mockup.MessageType{Type: "string"}),
-						mockup.Send(channelAToC, mockup.MessageType{Type: "string"}),
+						mockup.Send(channelAToB, mockup.MessageType{Type: "bool"}),
+						mockup.Send(channelAToC, mockup.MessageType{Type: "bool"}),
 					),
 				),
 			),
@@ -154,6 +155,8 @@ func makeChannelReader(channelMap *map[multiparty.Channel]*net.UDPConn) func(mul
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	makeGlobalType()
 
 	argsWithoutProg := os.Args[1:]
@@ -186,14 +189,14 @@ func C_main(args []string) {
 	if true {
 		recvBuf := make([]byte, 1024)
 		checker.ReadFromUDP("127.0.0.1:24603", readFun, recvBuf)
-		var receivedValue string
+		var receivedValue int
 		checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 	}
 
 	if true {
 		var labelToSend string
 		//Randomly choose if we commit or not
-		if rand.Int()%2 == 0 {
+		if (rand.Int() % 2) == 0 {
 			labelToSend = "C-Fail"
 		} else {
 			labelToSend = "C-Commit"
@@ -204,8 +207,13 @@ func C_main(args []string) {
 
 		recvBuf := make([]byte, 1024)
 		checker.ReadFromUDP("127.0.0.1:24603", readFun, recvBuf)
-		var receivedValue string
-		checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
+		var receivedValue bool
+		checker.UnpackReceive("Unpacked A's final answer", recvBuf, &receivedValue)
+		if receivedValue {
+			println("C Comitted")
+		} else {
+			println("C Aborted")
+		}
 	}
 
 }
@@ -214,7 +222,7 @@ func A_main(args []string) {
 	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("A")
 
 	if true {
-		var sendArg string = "START_COMMIT"
+		var sendArg int = 0
 		sendBuf := checker.PrepareSend("Sending B Commit Req", sendArg)
 		checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
 	}
@@ -229,7 +237,7 @@ func A_main(args []string) {
 		case "B-Fail":
 
 			if true {
-				var sendArg string = "START_COMMIT"
+				var sendArg int = 0
 				sendBuf := checker.PrepareSend("Sending C Commit Req", sendArg)
 				checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
 			}
@@ -241,13 +249,13 @@ func A_main(args []string) {
 				checker.UnpackReceive("Unpacking C Response", ourBuf, &receivedLabel)
 
 				if true {
-					var sendArg string = "ABORT"
+					var sendArg bool = false
 					sendBuf := checker.PrepareSend("Telling B to Abort", sendArg)
 					checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
 				}
 
 				if true {
-					var sendArg string = "ABORT"
+					var sendArg bool = false
 					sendBuf := checker.PrepareSend("Telling C to Abort", sendArg)
 					checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
 				}
@@ -259,7 +267,7 @@ func A_main(args []string) {
 		case "B-Commit":
 
 			if true {
-				var sendArg string = "START_COMMIT"
+				var sendArg int = 0
 				sendBuf := checker.PrepareSend("Telling C to Start Commit", sendArg)
 				checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
 			}
@@ -274,13 +282,13 @@ func A_main(args []string) {
 				case "C-Commit":
 
 					if true {
-						var sendArg string //TODO put a value here
+						var sendArg bool = true
 						sendBuf := checker.PrepareSend("Telling B To Commit", sendArg)
 						checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
 					}
 
 					if true {
-						var sendArg string //TODO put a value here
+						var sendArg bool = true
 						sendBuf := checker.PrepareSend("Telling C to Commit", sendArg)
 						checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
 					}
@@ -290,13 +298,13 @@ func A_main(args []string) {
 				case "C-Fail":
 
 					if true {
-						var sendArg string //TODO put a value here
+						var sendArg bool = false
 						sendBuf := checker.PrepareSend("Telling B To Abort", sendArg)
 						checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
 					}
 
 					if true {
-						var sendArg string //TODO put a value here
+						var sendArg bool = false
 						sendBuf := checker.PrepareSend("Telling C To Abort", sendArg)
 						checker.WriteToUDP("127.0.0.1:24603", writeFun, sendBuf, addrMaker)
 					}
@@ -321,14 +329,14 @@ func B_main(args []string) {
 	if true {
 		recvBuf := make([]byte, 1024)
 		checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
-		var receivedValue string
+		var receivedValue int
 		checker.UnpackReceive("Got Request", recvBuf, &receivedValue)
 	}
 
 	if true {
 		var labelToSend string
 		//Randomly choose if we commit or not
-		if rand.Int()%2 == 0 {
+		if (rand.Int() % 2) == 0 {
 			labelToSend = "B-Fail"
 		} else {
 			labelToSend = "B-Commit"
@@ -338,8 +346,14 @@ func B_main(args []string) {
 
 		recvBuf := make([]byte, 1024)
 		checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
-		var receivedValue string
-		checker.UnpackReceive("B Sending Abort", recvBuf, &receivedValue)
+		var receivedValue bool
+		checker.UnpackReceive("Unpack A's final answer", recvBuf, &receivedValue)
+
+		if receivedValue {
+			println("B Comitted")
+		} else {
+			println("B Aborted")
+		}
 	}
 
 }

@@ -24,7 +24,6 @@ func CreateChecker(id string, t multiparty.LocalType) Checker {
 	ret := Checker{govec.Initialize(id, "TODOLogFile.txt"), t, multiparty.Sort("ERROR INITIAL SORT"), nil}
 	//make sure we start with a type we can deal with
 	ret.unfoldIfRecursive()
-	ret.setInitialSort()
 	return ret
 }
 
@@ -38,12 +37,15 @@ func (checker *Checker) unfoldIfRecursive() {
 			//Check if there's nested recursion by looping again
 			continue
 		default:
+			//When we're done, set the sort we're expecting in the next message
+			//if it's a send or receive
+			checker.setExpectedSort()
 			return
 		}
 	}
 }
 
-func (checker *Checker) setInitialSort() {
+func (checker *Checker) setExpectedSort() {
 	switch t := checker.currentType.(type) {
 	//Send and receive: just progress to the "next" type
 	case multiparty.LocalSendType:
@@ -62,11 +64,9 @@ func (checker *Checker) advanceType() error {
 	//Send and receive: just progress to the "next" type
 	case multiparty.LocalSendType:
 		checker.currentType = t.Next
-		checker.expectedSortType = t.Value
 
 	case multiparty.LocalReceiveType:
 		checker.currentType = t.Next
-		checker.expectedSortType = t.Value
 
 	//Branch and select: what type we progress to depends on the label that was
 	//sent or received, so we use that to choose the next type
@@ -113,8 +113,8 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
-			panic(fmt.Sprintf("Invalid sort type in PrepareSend, is %s should be %s",
-				sortType, interfaceType))
+			panic(fmt.Sprintf("Wrong type for message data in UnpackReceive, given %s expected %s",
+				interfaceType, sortType))
 		}
 	case multiparty.LocalBranchingType:
 		//Make sure that what was sent was a label (string)
@@ -122,10 +122,20 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 		switch unpackString := unpack.(type) {
 		case *string:
 			_, ok := t.Branches[*unpackString]
+			checker.currentLabel = unpackString
 			if !ok {
 				panic(fmt.Sprintf(
 					"Received invalid label %s at branching point, should be one of TODO",
 					*unpackString))
+			}
+
+		case string:
+			_, ok := t.Branches[unpackString]
+			checker.currentLabel = &unpackString
+			if !ok {
+				panic(fmt.Sprintf(
+					"Received invalid label %s at branching point, should be one of TODO",
+					unpackString))
 			}
 
 		default:
@@ -166,7 +176,7 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 		sortType := reflect.ValueOf(checker.expectedSortType).String()
 
 		if sortType != interfaceType {
-			panic(fmt.Sprintf("Invalid sort type in PrepareSend, is %s should be %s", sortType, interfaceType))
+			panic(fmt.Sprintf("Wrong message type in PrepareSend, given %s expected %s", interfaceType, sortType))
 		}
 
 	case multiparty.LocalSelectionType:
@@ -175,12 +185,14 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 		switch unpackString := buf.(type) {
 		case *string:
 			_, ok := t.Branches[*unpackString]
+			checker.currentLabel = unpackString
 			if !ok {
 				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
 			}
 
 		case string:
 			_, ok := t.Branches[unpackString]
+			checker.currentLabel = &unpackString
 			if !ok {
 				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", unpackString))
 			}
