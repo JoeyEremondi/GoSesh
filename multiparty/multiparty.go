@@ -1,3 +1,12 @@
+/**
+* Utilities for deailing with multiparty session types.
+* Users of GoSesh should not need to use anything from this file,
+* with the exception of the Channel struct, which is simply a wrapper
+* around an ip:port string.
+*
+* Most of this code was written by Felipe Bañados.
+* See: https://github.com/fbanados/sessions.
+ */
 package multiparty
 
 import (
@@ -6,6 +15,11 @@ import (
 	"sort"
 	//	"reflect"
 )
+
+//A wrapper type for ip:port strings.
+type Channel string
+
+type Sort string
 
 // This package follows the descriptions of Multiparty Session Types as
 // discussed in Honda et al. 2008 (POPL).
@@ -86,9 +100,6 @@ func count(participants ParticipantSet) int {
 	}
 	return ans
 }
-
-type Channel string
-type Sort string
 
 type ParticipantSet []Participant
 

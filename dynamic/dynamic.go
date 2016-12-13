@@ -1,3 +1,8 @@
+/**
+* This module defines the Checker type, which provides a wrapper around GoVector
+capabilities. On top of GoVector's functions, it provides dynamic checking against a session type
+(usually defined by a mockup).
+*/
 package dynamic
 
 import (
@@ -10,7 +15,7 @@ import (
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
-//Checker : Stores the "current" session type in the computation.
+//Stores the "current" session type in the computation.
 //When network calls are made through the checker, they are checked
 //against its type. It will panic if messages are of the wrong type,
 //if sends and receives are mixed up or to the wrong party,
