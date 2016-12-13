@@ -137,18 +137,26 @@ func (checker *Checker) UnpackReceive(mesg string, buf []byte, unpack interface{
 			_, ok := t.Branches[*unpackString]
 			checker.currentLabel = unpackString
 			if !ok {
+				allBranches := ""
+				for label, _ := range t.Branches {
+					allBranches += label + ", "
+				}
 				panic(fmt.Sprintf(
-					"Received invalid label %s at branching point, should be one of TODO",
-					*unpackString))
+					"Received invalid label %s at branching point, should be one of %s",
+					*unpackString, allBranches))
 			}
 
 		case string:
 			_, ok := t.Branches[unpackString]
 			checker.currentLabel = &unpackString
 			if !ok {
+				allBranches := ""
+				for label, _ := range t.Branches {
+					allBranches += label + ", "
+				}
 				panic(fmt.Sprintf(
-					"Received invalid label %s at branching point, should be one of TODO",
-					unpackString))
+					"Received invalid label %s at branching point, should be one of %s",
+					unpackString, allBranches))
 			}
 
 		default:
@@ -200,14 +208,22 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 			_, ok := t.Branches[*unpackString]
 			checker.currentLabel = unpackString
 			if !ok {
-				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", *unpackString))
+				allBranches := ""
+				for label, _ := range t.Branches {
+					allBranches += label + ", "
+				}
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of %s", *unpackString, allBranches))
 			}
 
 		case string:
 			_, ok := t.Branches[unpackString]
 			checker.currentLabel = &unpackString
 			if !ok {
-				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of TODO", unpackString))
+				allBranches := ""
+				for label, _ := range t.Branches {
+					allBranches += label + ", "
+				}
+				panic(fmt.Sprintf("Sent invalid label %s at branching point, should be one of %s", unpackString, allBranches))
 			}
 
 		default:

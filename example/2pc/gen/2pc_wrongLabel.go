@@ -268,7 +268,7 @@ func B_main(args []string) {
 	if (rand.Int() % 2) == 0 {
 		labelToSend = "B-Abort"
 	} else {
-		labelToSend = "B-Commit"
+		labelToSend = "B-Comit"
 	}
 
 	labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
