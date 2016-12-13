@@ -1,10 +1,11 @@
-package mockup
-
 /* GoSesh Mockup is a set of wrapper structs and functions for the application
- * developer to mockup a method stub. The developer creates a method stub file
- * by calling the functions here. These functions convert the developer's code
- * into nested Global Types that are Session Type theory compatible.
+* developer to mockup a multiparty interaction.
+* The developer uses the mockup functions to create a protocol for their programs,
+* by calling the functions here. These functions create a stub Go file which convert the developer's mockup
+* into Global Types that can be used by the dynamic Session Type checker.
  */
+
+package mockup
 
 import (
 	"fmt"
@@ -13,21 +14,22 @@ import (
 	"github.com/JoeyEremondi/GoSesh/multiparty"
 )
 
-// Channel :  a connection between two endpoints
+// A connection between two endpoints.
+// The Source field should be an ip:port string.
 type Channel struct {
 	Name        string
 	Source      string
 	Destination string
 }
 
-// MessageType : send a message of this type on a channel
-// TODO custom struct message types for app dev
+//Wraps the (string representing) the Go type of the message being sent.
 type MessageType struct {
 	// In the Session Type theory, this is called a Sort
 	Type string
 }
 
-// Event : Wraps a value type
+//An abstraction of an interaction that can occur between some parties.
+//A mockup is made up of a number of events, run in sequence.
 type Event struct {
 	// In Session Type theory, this is the "Value" Type
 	// Representing a message being sent and received
@@ -41,13 +43,16 @@ type SwitchCase struct {
 	thenDo []Event
 }
 
+//Used to make the case for the given label inside of a Switch block.
 func Case(label string, thenDo ...Event) SwitchCase {
 	return SwitchCase{label: label, thenDo: thenDo}
 }
 
-/* CreateStubProgram : pass in a list of events and file name to generate
- * a go stub file which links the events and converts them to Session Types
- */
+/* Pass in the path to the file containing this mockup, the file name to generate,
+* and a list of events forming a mockup.
+* This will create a .go.stub file with the same contents (type definitions)
+as the input file, with the boilerplate code for a program performing the given events.
+*/
 func CreateStubProgram(infile string, outfile string, events ...Event) {
 	root := Link(events...)
 
@@ -66,7 +71,7 @@ func CreateStubProgram(infile string, outfile string, events ...Event) {
 		"fmt",
 	)
 
-	programLogic := GenerateProgram(root)
+	programLogic := generateProgram(root)
 
 	outFile.WriteString(initialProgram + "\n" + programLogic)
 }
@@ -83,7 +88,7 @@ func makePrefix(channel Channel) multiparty.Prefix {
 		PChannel: multipartyChannel}
 }
 
-//Send : wrap a Global Type into an Event for send channel
+//Send a value of the given type along the given channel.
 func Send(channel Channel, messageType MessageType) Event {
 	prefix := makePrefix(channel)
 
@@ -101,6 +106,8 @@ func Send(channel Channel, messageType MessageType) Event {
 	return send
 }
 
+//Create an event which performs sends a label on the given channel,
+//then performs the events in the case for whichever label was sent.
 func Switch(channel Channel, branches ...SwitchCase) Event {
 	//Each branch has a list of events to do in the branch
 	//We make a function wating for the type of what we do after the branch
@@ -119,8 +126,8 @@ func Switch(channel Channel, branches ...SwitchCase) Event {
 	return Event{wrappedType: retFun}
 }
 
-//Create a named loop, that we can control using Continue() and Break()
-//Note that all branches have an implicit Break() if Continue() is not specified
+//Create a named loop, that we can control using Continue() and Break().
+//Note that all branches have an implicit Break() if Continue() is not specified.
 func Loop(label string, bodyEvents ...Event) Event {
 	//We pipe the recursive variable as the thing to do next
 	//Looping explicitly until we see a break
@@ -153,10 +160,16 @@ func Continue(label string) Event {
 	return Event{wrappedType: retFun}
 }
 
-//Run the given events in parallel
-//TODO don't attach doNext to a branch?
+//Create an event corresponding to the given events running in parallel.
+//Because we don't know when a parallel block finished, no events may
+//come after a parallel block.
 func Parallel(events ...Event) Event {
 	retFun := func(nextType multiparty.GlobalType) multiparty.GlobalType {
+		switch nextType.(type) {
+		case multiparty.EndType:
+		default:
+			panic("Can't have any events occur after a parallel block.")
+		}
 		if len(events) == 0 {
 			return nextType
 		} else {
@@ -191,30 +204,6 @@ func internalDoNothing() Event {
 //Just does whatever comes next
 var DoNothing Event = internalDoNothing()
 
-//Receive : wrap a Global Type into an Event for receive channel
-/*
-func Receive(channel Channel, messageType MessageType) Event {
-	participant1 := multiparty.Participant(channel.Destination)
-	participant2 := multiparty.Participant(channel.Source)
-	multipartyChannel := multiparty.Channel(channel.Name)
-
-	prefix := multiparty.Prefix{
-		P1:       participant1,
-		P2:       participant2,
-		PChannel: multipartyChannel}
-
-	sort := multiparty.Sort(messageType.Type)
-
-	valueType := multiparty.ValueType{
-		ValuePrefix: prefix,
-		Value:       sort,
-		ValueNext:   multiparty.EndType{}}
-
-	receive := Event{wrappedValueType: valueType}
-
-	return receive
-} */
-
 /* EventList : sequential list of events in a protocol stub
  * In Session Type theory, this is a nested linked list
  */
@@ -228,10 +217,12 @@ func linkWithType(events []Event, endType multiparty.GlobalType) multiparty.Glob
 	return currentType
 }
 
+//Sequence the given events, and turn them into a global session type
 func Link(events ...Event) multiparty.GlobalType {
 	return linkWithType(events, multiparty.EndType{})
 }
 
+//Useful utility function
 func setGlobalType(ptr *multiparty.GlobalType, infile string, outfile string, types ...Event) {
 	*ptr = Link(types...)
 	if infile == outfile {

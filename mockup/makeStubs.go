@@ -12,6 +12,10 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
+//Read the given file, and return a string of its contents
+//with its main function renamed to makeGlobalType, and with
+//the call to CreateStubProgram replaced with a call to a function
+//that turns the mockup into a global type, that's stored in a global Go variable.
 func modifiedFileString(infile string, imports ...string) string {
 	fset := token.NewFileSet() // positions are relative to fset
 	f, err := parser.ParseFile(fset, infile, nil, 0)
@@ -60,7 +64,9 @@ func modifyMain(n ast.Node) {
 	})
 }
 
-//Used for both selection and branching
+//Take the map of labels to cases, and find the default (first) label, as well as
+//a string with the stubs for each case
+//Used for both selection and branching.
 func defaultLabelAndCases(branches map[string]multiparty.LocalType) (string, string) {
 	//Get a default label
 	//And make a case for each possible branch
@@ -188,7 +194,8 @@ func stub(tGeneric multiparty.LocalType) string {
 }
 
 //Generate the program with all the stubs for a global type
-func GenerateProgram(t multiparty.GlobalType) string {
+//Includes a LOT of boilerplate code for setting up connections and such
+func generateProgram(t multiparty.GlobalType) string {
 
 	participantCases := ""
 	participantFunctions := ""
@@ -288,7 +295,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 			return addr
 		} else {
 			addr, _ := net.ResolveUDPAddr("udp", string(p))
-			//TODO check err
 			addrMap[p] = addr
 			return addr
 		}
@@ -305,7 +311,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 //And does the write
 func makeChannelWriter(conn *net.UDPConn, addrMap *map[multiparty.Channel]*net.UDPAddr)(func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)){
 	return func(p multiparty.Channel, b []byte, addr *net.UDPAddr) (int, error){
-		//TODO get addr from map!
 		return conn.WriteToUDP(b, addr)
 	}
 }
@@ -332,6 +337,8 @@ func main(){
 	`, participantCases, participantFunctions)
 }
 
+//Given a Local Session type, return a map containing each channel received on in the given type.
+//The boolean values in the map are irrelevant, but a map is used to avoid duplicates.
 func FindReceivingChannels(tGeneric multiparty.LocalType, outMap *map[multiparty.Channel]bool) {
 	switch t := tGeneric.(type) {
 
