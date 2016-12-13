@@ -102,7 +102,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 			return addr
 		} else {
 			addr, _ := net.ResolveUDPAddr("udp", string(p))
-			//TODO check err
 			addrMap[p] = addr
 			return addr
 		}
@@ -119,7 +118,6 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 //And does the write
 func makeChannelWriter(conn *net.UDPConn, addrMap *map[multiparty.Channel]*net.UDPAddr)(func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)){
 	return func(p multiparty.Channel, b []byte, addr *net.UDPAddr) (int, error){
-		//TODO get addr from map!
 		return conn.WriteToUDP(b, addr)
 	}
 }

@@ -71,7 +71,7 @@
 
 		<div id="short-nav">
 			<dl>
-			<dd><code>import "github.com/JoeyEremondi/GoSesh/multiparty"</code></dd>
+			<dd><code>import "GoSesh/multiparty"</code></dd>
 			</dl>
 			<dl>
 			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
@@ -87,6 +87,16 @@
 			</div>
 			<div class="expanded">
 				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>
+*
+* Utilities for deailing with multiparty session types.
+* Users of GoSesh should not need to use anything from this file,
+* with the exception of the Channel struct, which is simply a wrapper
+* around an ip:port string.
+*
+* Most of this code was written by Felipe Bañados.
+* See: <a href="https://github.com/fbanados/sessions">https://github.com/fbanados/sessions</a>.
+</p>
 
 			</div>
 		</div>
@@ -374,7 +384,7 @@
 			<p>
 			<span style="font-size:90%">
 
-				<a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go">multiparty.go</a>
+				<a href="/src/GoSesh/multiparty/multiparty.go">multiparty.go</a>
 
 			</span>
 			</p>
@@ -424,7 +434,7 @@
 
 
 
-			<h2 id="InputDependency">func <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=13116:13171#L581">InputDependency</a></h2>
+			<h2 id="InputDependency">func <a href="/src/GoSesh/multiparty/multiparty.go?s=13482:13537#L592">InputDependency</a></h2>
 			<pre>func InputDependency(firsts []<a href="#Prefix">Prefix</a>, last <a href="#Prefix">Prefix</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -433,7 +443,7 @@
 
 
 
-			<h2 id="OutputDependency">func <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=13592:13648#L598">OutputDependency</a></h2>
+			<h2 id="OutputDependency">func <a href="/src/GoSesh/multiparty/multiparty.go?s=13958:14014#L609">OutputDependency</a></h2>
 			<pre>func OutputDependency(firsts []<a href="#Prefix">Prefix</a>, last <a href="#Prefix">Prefix</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -442,7 +452,7 @@
 
 
 
-			<h2 id="SingletonValue">func <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=3160:3194#L178">SingletonValue</a></h2>
+			<h2 id="SingletonValue">func <a href="/src/GoSesh/multiparty/multiparty.go?s=3526:3560#L189">SingletonValue</a></h2>
 			<pre>func SingletonValue(s <a href="#Sort">Sort</a>) []<a href="#Sort">Sort</a></pre>
 
 
@@ -452,7 +462,7 @@
 
 
 
-			<h2 id="BranchingType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=698:784#L29">BranchingType</a></h2>
+			<h2 id="BranchingType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=1102:1188#L43">BranchingType</a></h2>
 			<pre>type BranchingType struct {
     BranchPrefix <a href="#Prefix">Prefix</a>
     Branches     map[<a href="/pkg/builtin/#string">string</a>]<a href="#GlobalType">GlobalType</a>
@@ -471,7 +481,7 @@
 
 
 
-				<h3 id="BranchingType.Participants">func (BranchingType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=5102:5153#L255">Participants</a></h3>
+				<h3 id="BranchingType.Participants">func (BranchingType) <a href="/src/GoSesh/multiparty/multiparty.go?s=5468:5519#L266">Participants</a></h3>
 				<pre>func (b <a href="#BranchingType">BranchingType</a>) Participants() []<a href="#Participant">Participant</a></pre>
 
 
@@ -479,7 +489,7 @@
 
 
 
-				<h3 id="BranchingType.Prefixes">func (BranchingType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=4648:4692#L234">Prefixes</a></h3>
+				<h3 id="BranchingType.Prefixes">func (BranchingType) <a href="/src/GoSesh/multiparty/multiparty.go?s=5014:5058#L245">Prefixes</a></h3>
 				<pre>func (t <a href="#BranchingType">BranchingType</a>) Prefixes() [][]<a href="#Prefix">Prefix</a></pre>
 
 
@@ -487,7 +497,7 @@
 
 
 
-				<h3 id="BranchingType.Project">func (BranchingType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=5289:5353#L263">Project</a></h3>
+				<h3 id="BranchingType.Project">func (BranchingType) <a href="/src/GoSesh/multiparty/multiparty.go?s=5655:5719#L274">Project</a></h3>
 				<pre>func (b <a href="#BranchingType">BranchingType</a>) Project(p <a href="#Participant">Participant</a>) (<a href="#LocalType">LocalType</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
 
 
@@ -497,8 +507,11 @@
 
 
 
-			<h2 id="Channel">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1552:1571#L80">Channel</a></h2>
+			<h2 id="Channel">type <a href="/src/GoSesh/multiparty/multiparty.go?s=436:455#L10">Channel</a></h2>
 			<pre>type Channel <a href="/pkg/builtin/#string">string</a></pre>
+			<p>
+A wrapper type for ip:port strings.
+</p>
 
 
 
@@ -515,7 +528,7 @@
 
 
 
-			<h2 id="ChannelSet">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1842:1867#L99">ChannelSet</a></h2>
+			<h2 id="ChannelSet">type <a href="/src/GoSesh/multiparty/multiparty.go?s=2208:2233#L110">ChannelSet</a></h2>
 			<pre>type ChannelSet []<a href="#Channel">Channel</a></pre>
 
 
@@ -531,7 +544,7 @@
 
 
 
-				<h3 id="ChannelSet.Len">func (ChannelSet) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1869:1899#L101">Len</a></h3>
+				<h3 id="ChannelSet.Len">func (ChannelSet) <a href="/src/GoSesh/multiparty/multiparty.go?s=2235:2265#L112">Len</a></h3>
 				<pre>func (cs <a href="#ChannelSet">ChannelSet</a>) Len() <a href="/pkg/builtin/#int">int</a></pre>
 
 
@@ -539,7 +552,7 @@
 
 
 
-				<h3 id="ChannelSet.Less">func (ChannelSet) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1921:1961#L105">Less</a></h3>
+				<h3 id="ChannelSet.Less">func (ChannelSet) <a href="/src/GoSesh/multiparty/multiparty.go?s=2287:2327#L116">Less</a></h3>
 				<pre>func (cs <a href="#ChannelSet">ChannelSet</a>) Less(i, j <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -547,7 +560,7 @@
 
 
 
-				<h3 id="ChannelSet.Swap">func (ChannelSet) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1989:2024#L109">Swap</a></h3>
+				<h3 id="ChannelSet.Swap">func (ChannelSet) <a href="/src/GoSesh/multiparty/multiparty.go?s=2355:2390#L120">Swap</a></h3>
 				<pre>func (cs <a href="#ChannelSet">ChannelSet</a>) Swap(i, j <a href="/pkg/builtin/#int">int</a>)</pre>
 
 
@@ -557,7 +570,7 @@
 
 
 
-			<h2 id="EndType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=8825:8846#L427">EndType</a></h2>
+			<h2 id="EndType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=9191:9212#L438">EndType</a></h2>
 			<pre>type EndType struct{}</pre>
 
 
@@ -573,7 +586,7 @@
 
 
 
-				<h3 id="EndType.Participants">func (EndType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=9051:9096#L440">Participants</a></h3>
+				<h3 id="EndType.Participants">func (EndType) <a href="/src/GoSesh/multiparty/multiparty.go?s=9417:9462#L451">Participants</a></h3>
 				<pre>func (t <a href="#EndType">EndType</a>) Participants() []<a href="#Participant">Participant</a></pre>
 
 
@@ -581,7 +594,7 @@
 
 
 
-				<h3 id="EndType.Prefixes">func (EndType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=8976:9014#L436">Prefixes</a></h3>
+				<h3 id="EndType.Prefixes">func (EndType) <a href="/src/GoSesh/multiparty/multiparty.go?s=9342:9380#L447">Prefixes</a></h3>
 				<pre>func (t <a href="#EndType">EndType</a>) Prefixes() [][]<a href="#Prefix">Prefix</a></pre>
 
 
@@ -589,7 +602,7 @@
 
 
 
-				<h3 id="EndType.Project">func (EndType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=9136:9194#L444">Project</a></h3>
+				<h3 id="EndType.Project">func (EndType) <a href="/src/GoSesh/multiparty/multiparty.go?s=9502:9560#L455">Project</a></h3>
 				<pre>func (t <a href="#EndType">EndType</a>) Project(p <a href="#Participant">Participant</a>) (<a href="#LocalType">LocalType</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
 
 
@@ -599,7 +612,7 @@
 
 
 
-			<h2 id="GlobalType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=203:399#L5">GlobalType</a></h2>
+			<h2 id="GlobalType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=607:803#L19">GlobalType</a></h2>
 			<pre>type GlobalType interface {
     Prefixes() [][]<a href="#Prefix">Prefix</a>
     Participants() []<a href="#Participant">Participant</a>
@@ -623,7 +636,7 @@
 
 
 
-			<h2 id="LocalBranchingType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=17480:17571#L763">LocalBranchingType</a></h2>
+			<h2 id="LocalBranchingType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=17846:17937#L774">LocalBranchingType</a></h2>
 			<pre>type LocalBranchingType struct {
     <span class="comment">// k &amp;</span>
     Channel  <a href="#Channel">Channel</a>
@@ -643,7 +656,7 @@
 
 
 
-				<h3 id="LocalBranchingType.Equals">func (LocalBranchingType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=17777:17829#L777">Equals</a></h3>
+				<h3 id="LocalBranchingType.Equals">func (LocalBranchingType) <a href="/src/GoSesh/multiparty/multiparty.go?s=18143:18195#L788">Equals</a></h3>
 				<pre>func (t <a href="#LocalBranchingType">LocalBranchingType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -651,7 +664,7 @@
 
 
 
-				<h3 id="LocalBranchingType.Substitute">func (LocalBranchingType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=17573:17654#L769">Substitute</a></h3>
+				<h3 id="LocalBranchingType.Substitute">func (LocalBranchingType) <a href="/src/GoSesh/multiparty/multiparty.go?s=17939:18020#L780">Substitute</a></h3>
 				<pre>func (t <a href="#LocalBranchingType">LocalBranchingType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -661,7 +674,7 @@
 
 
 
-			<h2 id="LocalEndType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=19080:19106#L842">LocalEndType</a></h2>
+			<h2 id="LocalEndType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=19446:19472#L853">LocalEndType</a></h2>
 			<pre>type LocalEndType struct{}</pre>
 
 
@@ -677,7 +690,7 @@
 
 
 
-				<h3 id="LocalEndType.Equals">func (LocalEndType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=19199:19245#L848">Equals</a></h3>
+				<h3 id="LocalEndType.Equals">func (LocalEndType) <a href="/src/GoSesh/multiparty/multiparty.go?s=19565:19611#L859">Equals</a></h3>
 				<pre>func (t <a href="#LocalEndType">LocalEndType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -685,7 +698,7 @@
 
 
 
-				<h3 id="LocalEndType.Substitute">func (LocalEndType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=19108:19183#L844">Substitute</a></h3>
+				<h3 id="LocalEndType.Substitute">func (LocalEndType) <a href="/src/GoSesh/multiparty/multiparty.go?s=19474:19549#L855">Substitute</a></h3>
 				<pre>func (t <a href="#LocalEndType">LocalEndType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -695,7 +708,7 @@
 
 
 
-			<h2 id="LocalNameType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18063:18088#L791">LocalNameType</a></h2>
+			<h2 id="LocalNameType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=18429:18454#L802">LocalNameType</a></h2>
 			<pre>type LocalNameType <a href="/pkg/builtin/#string">string</a></pre>
 
 
@@ -711,7 +724,7 @@
 
 
 
-				<h3 id="LocalNameType.Equals">func (LocalNameType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18328:18375#L805">Equals</a></h3>
+				<h3 id="LocalNameType.Equals">func (LocalNameType) <a href="/src/GoSesh/multiparty/multiparty.go?s=18694:18741#L816">Equals</a></h3>
 				<pre>func (t <a href="#LocalNameType">LocalNameType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -719,7 +732,7 @@
 
 
 
-				<h3 id="LocalNameType.GoString">func (LocalNameType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18090:18130#L793">GoString</a></h3>
+				<h3 id="LocalNameType.GoString">func (LocalNameType) <a href="/src/GoSesh/multiparty/multiparty.go?s=18456:18496#L804">GoString</a></h3>
 				<pre>func (t <a href="#LocalNameType">LocalNameType</a>) GoString() <a href="/pkg/builtin/#string">string</a></pre>
 
 
@@ -727,7 +740,7 @@
 
 
 
-				<h3 id="LocalNameType.Substitute">func (LocalNameType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18195:18271#L797">Substitute</a></h3>
+				<h3 id="LocalNameType.Substitute">func (LocalNameType) <a href="/src/GoSesh/multiparty/multiparty.go?s=18561:18637#L808">Substitute</a></h3>
 				<pre>func (t <a href="#LocalNameType">LocalNameType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -737,7 +750,7 @@
 
 
 
-			<h2 id="LocalReceiveType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16433:16515#L714">LocalReceiveType</a></h2>
+			<h2 id="LocalReceiveType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=16799:16881#L725">LocalReceiveType</a></h2>
 			<pre>type LocalReceiveType struct {
     Channel <a href="#Channel">Channel</a>
     Value   <a href="#Sort">Sort</a>
@@ -757,7 +770,7 @@
 
 
 
-				<h3 id="LocalReceiveType.Equals">func (LocalReceiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16663:16713#L726">Equals</a></h3>
+				<h3 id="LocalReceiveType.Equals">func (LocalReceiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=17029:17079#L737">Equals</a></h3>
 				<pre>func (t <a href="#LocalReceiveType">LocalReceiveType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -765,7 +778,7 @@
 
 
 
-				<h3 id="LocalReceiveType.Substitute">func (LocalReceiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16517:16596#L720">Substitute</a></h3>
+				<h3 id="LocalReceiveType.Substitute">func (LocalReceiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=16883:16962#L731">Substitute</a></h3>
 				<pre>func (t <a href="#LocalReceiveType">LocalReceiveType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -775,7 +788,7 @@
 
 
 
-			<h2 id="LocalRecursiveType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18470:18540#L813">LocalRecursiveType</a></h2>
+			<h2 id="LocalRecursiveType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=18836:18906#L824">LocalRecursiveType</a></h2>
 			<pre>type LocalRecursiveType struct {
     Bind <a href="#LocalNameType">LocalNameType</a>
     Body <a href="#LocalType">LocalType</a>
@@ -794,7 +807,7 @@
 
 
 
-				<h3 id="LocalRecursiveType.Equals">func (LocalRecursiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18871:18923#L833">Equals</a></h3>
+				<h3 id="LocalRecursiveType.Equals">func (LocalRecursiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=19237:19289#L844">Equals</a></h3>
 				<pre>func (t <a href="#LocalRecursiveType">LocalRecursiveType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -802,7 +815,7 @@
 
 
 
-				<h3 id="LocalRecursiveType.Substitute">func (LocalRecursiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18639:18720#L822">Substitute</a></h3>
+				<h3 id="LocalRecursiveType.Substitute">func (LocalRecursiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=19005:19086#L833">Substitute</a></h3>
 				<pre>func (t <a href="#LocalRecursiveType">LocalRecursiveType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -810,7 +823,7 @@
 
 
 
-				<h3 id="LocalRecursiveType.UnfoldOneLevel">func (LocalRecursiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=18542:18596#L818">UnfoldOneLevel</a></h3>
+				<h3 id="LocalRecursiveType.UnfoldOneLevel">func (LocalRecursiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=18908:18962#L829">UnfoldOneLevel</a></h3>
 				<pre>func (t <a href="#LocalRecursiveType">LocalRecursiveType</a>) UnfoldOneLevel() <a href="#LocalType">LocalType</a></pre>
 
 
@@ -820,7 +833,7 @@
 
 
 
-			<h2 id="LocalSelectionType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16892:16988#L735">LocalSelectionType</a></h2>
+			<h2 id="LocalSelectionType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=17258:17354#L746">LocalSelectionType</a></h2>
 			<pre>type LocalSelectionType struct {
     <span class="comment">// k \oplus</span>
     Channel  <a href="#Channel">Channel</a>
@@ -840,7 +853,7 @@
 
 
 
-				<h3 id="LocalSelectionType.Equals">func (LocalSelectionType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=17194:17246#L749">Equals</a></h3>
+				<h3 id="LocalSelectionType.Equals">func (LocalSelectionType) <a href="/src/GoSesh/multiparty/multiparty.go?s=17560:17612#L760">Equals</a></h3>
 				<pre>func (t <a href="#LocalSelectionType">LocalSelectionType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -848,7 +861,7 @@
 
 
 
-				<h3 id="LocalSelectionType.Substitute">func (LocalSelectionType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16990:17071#L741">Substitute</a></h3>
+				<h3 id="LocalSelectionType.Substitute">func (LocalSelectionType) <a href="/src/GoSesh/multiparty/multiparty.go?s=17356:17437#L752">Substitute</a></h3>
 				<pre>func (t <a href="#LocalSelectionType">LocalSelectionType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -858,7 +871,7 @@
 
 
 
-			<h2 id="LocalSendType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=15989:16068#L693">LocalSendType</a></h2>
+			<h2 id="LocalSendType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=16355:16434#L704">LocalSendType</a></h2>
 			<pre>type LocalSendType struct {
     Channel <a href="#Channel">Channel</a>
     Value   <a href="#Sort">Sort</a>
@@ -878,7 +891,7 @@
 
 
 
-				<h3 id="LocalSendType.Equals">func (LocalSendType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16213:16260#L705">Equals</a></h3>
+				<h3 id="LocalSendType.Equals">func (LocalSendType) <a href="/src/GoSesh/multiparty/multiparty.go?s=16579:16626#L716">Equals</a></h3>
 				<pre>func (t <a href="#LocalSendType">LocalSendType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -886,7 +899,7 @@
 
 
 
-				<h3 id="LocalSendType.Substitute">func (LocalSendType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=16070:16146#L699">Substitute</a></h3>
+				<h3 id="LocalSendType.Substitute">func (LocalSendType) <a href="/src/GoSesh/multiparty/multiparty.go?s=16436:16512#L710">Substitute</a></h3>
 				<pre>func (t <a href="#LocalSendType">LocalSendType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -896,7 +909,7 @@
 
 
 
-			<h2 id="LocalType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=15076:15182#L657">LocalType</a></h2>
+			<h2 id="LocalType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=15442:15548#L668">LocalType</a></h2>
 			<pre>type LocalType interface {
     Equals(t <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a>
     Substitute(u <a href="#LocalNameType">LocalNameType</a>, t <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a>
@@ -917,7 +930,7 @@
 
 
 
-			<h2 id="NameType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=7562:7582#L364">NameType</a></h2>
+			<h2 id="NameType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=7928:7948#L375">NameType</a></h2>
 			<pre>type NameType <a href="/pkg/builtin/#string">string</a></pre>
 
 
@@ -933,7 +946,7 @@
 
 
 
-				<h3 id="NameType.Participants">func (NameType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=7716:7762#L374">Participants</a></h3>
+				<h3 id="NameType.Participants">func (NameType) <a href="/src/GoSesh/multiparty/multiparty.go?s=8082:8128#L385">Participants</a></h3>
 				<pre>func (t <a href="#NameType">NameType</a>) Participants() []<a href="#Participant">Participant</a></pre>
 
 
@@ -941,7 +954,7 @@
 
 
 
-				<h3 id="NameType.Prefixes">func (NameType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=7640:7679#L370">Prefixes</a></h3>
+				<h3 id="NameType.Prefixes">func (NameType) <a href="/src/GoSesh/multiparty/multiparty.go?s=8006:8045#L381">Prefixes</a></h3>
 				<pre>func (t <a href="#NameType">NameType</a>) Prefixes() [][]<a href="#Prefix">Prefix</a></pre>
 
 
@@ -949,7 +962,7 @@
 
 
 
-				<h3 id="NameType.Project">func (NameType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=7802:7861#L378">Project</a></h3>
+				<h3 id="NameType.Project">func (NameType) <a href="/src/GoSesh/multiparty/multiparty.go?s=8168:8227#L389">Project</a></h3>
 				<pre>func (t <a href="#NameType">NameType</a>) Project(p <a href="#Participant">Participant</a>) (<a href="#LocalType">LocalType</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
 
 
@@ -959,7 +972,7 @@
 
 
 
-			<h2 id="ParallelType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=6500:6545#L317">ParallelType</a></h2>
+			<h2 id="ParallelType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=6866:6911#L328">ParallelType</a></h2>
 			<pre>type ParallelType struct {
     <span class="comment">// contains filtered or unexported fields</span>
 }</pre>
@@ -975,7 +988,7 @@
 
 
 
-				<h3 id="MakeParallelType">func <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=6547:6609#L321">MakeParallelType</a></h3>
+				<h3 id="MakeParallelType">func <a href="/src/GoSesh/multiparty/multiparty.go?s=6913:6975#L332">MakeParallelType</a></h3>
 				<pre>func MakeParallelType(a <a href="#GlobalType">GlobalType</a>, b <a href="#GlobalType">GlobalType</a>) <a href="#ParallelType">ParallelType</a></pre>
 
 
@@ -984,7 +997,7 @@
 
 
 
-				<h3 id="ParallelType.Participants">func (ParallelType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=6936:6986#L337">Participants</a></h3>
+				<h3 id="ParallelType.Participants">func (ParallelType) <a href="/src/GoSesh/multiparty/multiparty.go?s=7302:7352#L348">Participants</a></h3>
 				<pre>func (t <a href="#ParallelType">ParallelType</a>) Participants() []<a href="#Participant">Participant</a></pre>
 
 
@@ -992,7 +1005,7 @@
 
 
 
-				<h3 id="ParallelType.Prefixes">func (ParallelType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=6741:6784#L329">Prefixes</a></h3>
+				<h3 id="ParallelType.Prefixes">func (ParallelType) <a href="/src/GoSesh/multiparty/multiparty.go?s=7107:7150#L340">Prefixes</a></h3>
 				<pre>func (t <a href="#ParallelType">ParallelType</a>) Prefixes() [][]<a href="#Prefix">Prefix</a></pre>
 
 
@@ -1000,7 +1013,7 @@
 
 
 
-				<h3 id="ParallelType.Project">func (ParallelType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=7050:7113#L341">Project</a></h3>
+				<h3 id="ParallelType.Project">func (ParallelType) <a href="/src/GoSesh/multiparty/multiparty.go?s=7416:7479#L352">Project</a></h3>
 				<pre>func (t <a href="#ParallelType">ParallelType</a>) Project(p <a href="#Participant">Participant</a>) (<a href="#LocalType">LocalType</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
 
 
@@ -1010,7 +1023,7 @@
 
 
 
-			<h2 id="Participant">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=520:543#L16">Participant</a></h2>
+			<h2 id="Participant">type <a href="/src/GoSesh/multiparty/multiparty.go?s=924:947#L30">Participant</a></h2>
 			<pre>type Participant <a href="/pkg/builtin/#string">string</a></pre>
 			<p>
 TODO these kinds of non-keyed types are super annoying because we have to use
@@ -1032,7 +1045,7 @@ reflection to get the value out :S
 
 
 
-			<h2 id="ParticipantSet">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1590:1623#L83">ParticipantSet</a></h2>
+			<h2 id="ParticipantSet">type <a href="/src/GoSesh/multiparty/multiparty.go?s=1956:1989#L94">ParticipantSet</a></h2>
 			<pre>type ParticipantSet []<a href="#Participant">Participant</a></pre>
 
 
@@ -1048,7 +1061,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ParticipantSet.Len">func (ParticipantSet) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1625:1659#L85">Len</a></h3>
+				<h3 id="ParticipantSet.Len">func (ParticipantSet) <a href="/src/GoSesh/multiparty/multiparty.go?s=1991:2025#L96">Len</a></h3>
 				<pre>func (ps <a href="#ParticipantSet">ParticipantSet</a>) Len() <a href="/pkg/builtin/#int">int</a></pre>
 
 
@@ -1056,7 +1069,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ParticipantSet.Less">func (ParticipantSet) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1681:1725#L89">Less</a></h3>
+				<h3 id="ParticipantSet.Less">func (ParticipantSet) <a href="/src/GoSesh/multiparty/multiparty.go?s=2047:2091#L100">Less</a></h3>
 				<pre>func (ps <a href="#ParticipantSet">ParticipantSet</a>) Less(i, j <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -1064,7 +1077,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ParticipantSet.Swap">func (ParticipantSet) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1753:1792#L93">Swap</a></h3>
+				<h3 id="ParticipantSet.Swap">func (ParticipantSet) <a href="/src/GoSesh/multiparty/multiparty.go?s=2119:2158#L104">Swap</a></h3>
 				<pre>func (ps <a href="#ParticipantSet">ParticipantSet</a>) Swap(i, j <a href="/pkg/builtin/#int">int</a>)</pre>
 
 
@@ -1074,7 +1087,7 @@ reflection to get the value out :S
 
 
 
-			<h2 id="Prefix">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=545:607#L18">Prefix</a></h2>
+			<h2 id="Prefix">type <a href="/src/GoSesh/multiparty/multiparty.go?s=949:1011#L32">Prefix</a></h2>
 			<pre>type Prefix struct {
     P1, P2   <a href="#Participant">Participant</a>
     PChannel <a href="#Channel">Channel</a>
@@ -1093,7 +1106,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="Prefix.II">func (Prefix) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=9782:9817#L476">II</a></h3>
+				<h3 id="Prefix.II">func (Prefix) <a href="/src/GoSesh/multiparty/multiparty.go?s=10148:10183#L487">II</a></h3>
 				<pre>func (n1 <a href="#Prefix">Prefix</a>) II(n2 <a href="#Prefix">Prefix</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -1101,7 +1114,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="Prefix.IO">func (Prefix) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=10170:10205#L490">IO</a></h3>
+				<h3 id="Prefix.IO">func (Prefix) <a href="/src/GoSesh/multiparty/multiparty.go?s=10536:10571#L501">IO</a></h3>
 				<pre>func (n1 <a href="#Prefix">Prefix</a>) IO(n2 <a href="#Prefix">Prefix</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -1109,7 +1122,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="Prefix.OO">func (Prefix) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=10516:10551#L502">OO</a></h3>
+				<h3 id="Prefix.OO">func (Prefix) <a href="/src/GoSesh/multiparty/multiparty.go?s=10882:10917#L513">OO</a></h3>
 				<pre>func (n1 <a href="#Prefix">Prefix</a>) OO(n2 <a href="#Prefix">Prefix</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -1119,7 +1132,7 @@ reflection to get the value out :S
 
 
 
-			<h2 id="ProjectionType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=15184:15296#L662">ProjectionType</a></h2>
+			<h2 id="ProjectionType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=15550:15662#L673">ProjectionType</a></h2>
 			<pre>type ProjectionType struct {
     <span class="comment">// Originall, Type @ participant</span>
     T <a href="#LocalType">LocalType</a>
@@ -1139,7 +1152,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ProjectionType.Equals">func (ProjectionType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=15436:15484#L674">Equals</a></h3>
+				<h3 id="ProjectionType.Equals">func (ProjectionType) <a href="/src/GoSesh/multiparty/multiparty.go?s=15802:15850#L685">Equals</a></h3>
 				<pre>func (t <a href="#ProjectionType">ProjectionType</a>) Equals(l <a href="#LocalType">LocalType</a>) <a href="/pkg/builtin/#bool">bool</a></pre>
 
 
@@ -1147,7 +1160,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ProjectionType.Substitute">func (ProjectionType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=15298:15375#L668">Substitute</a></h3>
+				<h3 id="ProjectionType.Substitute">func (ProjectionType) <a href="/src/GoSesh/multiparty/multiparty.go?s=15664:15741#L679">Substitute</a></h3>
 				<pre>func (t <a href="#ProjectionType">ProjectionType</a>) Substitute(u <a href="#LocalNameType">LocalNameType</a>, tsub <a href="#LocalType">LocalType</a>) <a href="#LocalType">LocalType</a></pre>
 
 
@@ -1157,7 +1170,7 @@ reflection to get the value out :S
 
 
 
-			<h2 id="RecursiveType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=786:847#L34">RecursiveType</a></h2>
+			<h2 id="RecursiveType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=1190:1251#L48">RecursiveType</a></h2>
 			<pre>type RecursiveType struct {
     Bind <a href="#NameType">NameType</a>
     Body <a href="#GlobalType">GlobalType</a>
@@ -1176,7 +1189,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="RecursiveType.Participants">func (RecursiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=8330:8381#L406">Participants</a></h3>
+				<h3 id="RecursiveType.Participants">func (RecursiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=8696:8747#L417">Participants</a></h3>
 				<pre>func (t <a href="#RecursiveType">RecursiveType</a>) Participants() []<a href="#Participant">Participant</a></pre>
 
 
@@ -1184,7 +1197,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="RecursiveType.Prefixes">func (RecursiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=8254:8298#L402">Prefixes</a></h3>
+				<h3 id="RecursiveType.Prefixes">func (RecursiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=8620:8664#L413">Prefixes</a></h3>
 				<pre>func (t <a href="#RecursiveType">RecursiveType</a>) Prefixes() [][]<a href="#Prefix">Prefix</a></pre>
 
 
@@ -1192,7 +1205,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="RecursiveType.Project">func (RecursiveType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=8417:8481#L410">Project</a></h3>
+				<h3 id="RecursiveType.Project">func (RecursiveType) <a href="/src/GoSesh/multiparty/multiparty.go?s=8783:8847#L421">Project</a></h3>
 				<pre>func (t <a href="#RecursiveType">RecursiveType</a>) Project(p <a href="#Participant">Participant</a>) (<a href="#LocalType">LocalType</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
 
 
@@ -1202,7 +1215,7 @@ reflection to get the value out :S
 
 
 
-			<h2 id="Sort">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=1572:1588#L81">Sort</a></h2>
+			<h2 id="Sort">type <a href="/src/GoSesh/multiparty/multiparty.go?s=457:473#L12">Sort</a></h2>
 			<pre>type Sort <a href="/pkg/builtin/#string">string</a></pre>
 
 
@@ -1220,7 +1233,7 @@ reflection to get the value out :S
 
 
 
-			<h2 id="ValueType">type <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=609:696#L23">ValueType</a></h2>
+			<h2 id="ValueType">type <a href="/src/GoSesh/multiparty/multiparty.go?s=1013:1100#L37">ValueType</a></h2>
 			<pre>type ValueType struct {
     ValuePrefix <a href="#Prefix">Prefix</a>
     Value       <a href="#Sort">Sort</a>
@@ -1240,7 +1253,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ValueType.Participants">func (ValueType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=3592:3639#L197">Participants</a></h3>
+				<h3 id="ValueType.Participants">func (ValueType) <a href="/src/GoSesh/multiparty/multiparty.go?s=3958:4005#L208">Participants</a></h3>
 				<pre>func (t <a href="#ValueType">ValueType</a>) Participants() []<a href="#Participant">Participant</a></pre>
 
 
@@ -1248,7 +1261,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ValueType.Prefixes">func (ValueType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=3330:3370#L188">Prefixes</a></h3>
+				<h3 id="ValueType.Prefixes">func (ValueType) <a href="/src/GoSesh/multiparty/multiparty.go?s=3696:3736#L199">Prefixes</a></h3>
 				<pre>func (t <a href="#ValueType">ValueType</a>) Prefixes() [][]<a href="#Prefix">Prefix</a></pre>
 
 
@@ -1256,7 +1269,7 @@ reflection to get the value out :S
 
 
 
-				<h3 id="ValueType.Project">func (ValueType) <a href="/src/github.com/JoeyEremondi/GoSesh/multiparty/multiparty.go?s=3721:3781#L201">Project</a></h3>
+				<h3 id="ValueType.Project">func (ValueType) <a href="/src/GoSesh/multiparty/multiparty.go?s=4087:4147#L212">Project</a></h3>
 				<pre>func (t <a href="#ValueType">ValueType</a>) Project(p <a href="#Participant">Participant</a>) (<a href="#LocalType">LocalType</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
 
 

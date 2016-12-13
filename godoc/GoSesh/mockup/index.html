@@ -71,7 +71,7 @@
 
 		<div id="short-nav">
 			<dl>
-			<dd><code>import "github.com/JoeyEremondi/GoSesh/mockup"</code></dd>
+			<dd><code>import "GoSesh/mockup"</code></dd>
 			</dl>
 			<dl>
 			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
@@ -109,10 +109,7 @@
 				<dd><a href="#CreateStubProgram">func CreateStubProgram(infile string, outfile string, events ...Event)</a></dd>
 
 
-				<dd><a href="#FindReceivingChannels">func FindReceivingChannels(tGeneric multiparty.LocalType) []multiparty.Channel</a></dd>
-
-
-				<dd><a href="#GenerateProgram">func GenerateProgram(t multiparty.GlobalType) string</a></dd>
+				<dd><a href="#FindReceivingChannels">func FindReceivingChannels(tGeneric multiparty.LocalType, outMap *map[multiparty.Channel]bool)</a></dd>
 
 
 				<dd><a href="#Link">func Link(events ...Event) multiparty.GlobalType</a></dd>
@@ -173,9 +170,9 @@
 			<p>
 			<span style="font-size:90%">
 
-				<a href="/src/github.com/JoeyEremondi/GoSesh/mockup/makeStubs.go">makeStubs.go</a>
+				<a href="/src/GoSesh/mockup/makeStubs.go">makeStubs.go</a>
 
-				<a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go">mockup.go</a>
+				<a href="/src/GoSesh/mockup/mockup.go">mockup.go</a>
 
 			</span>
 			</p>
@@ -225,11 +222,14 @@
 
 
 
-			<h2 id="CreateStubProgram">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=1403:1473#L41">CreateStubProgram</a></h2>
+			<h2 id="CreateStubProgram">func <a href="/src/GoSesh/mockup/mockup.go?s=1816:1886#L46">CreateStubProgram</a></h2>
 			<pre>func CreateStubProgram(infile <a href="/pkg/builtin/#string">string</a>, outfile <a href="/pkg/builtin/#string">string</a>, events ...<a href="#Event">Event</a>)</pre>
-			<p>
-CreateStubProgram : pass in a list of events and file name to generate
-* a go stub file which links the events and converts them to Session Types
+			<pre>Pass in the path to the file containing this mockup, the file name to generate,
+</pre>
+<p>
+* and a list of events forming a mockup.
+* This will create a .go.stub file with the same contents (type definitions)
+as the input file, with the boilerplate code for a program performing the given events.
 </p>
 
 
@@ -238,19 +238,11 @@ CreateStubProgram : pass in a list of events and file name to generate
 
 
 
-			<h2 id="FindReceivingChannels">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/makeStubs.go?s=8428:8506#L305">FindReceivingChannels</a></h2>
-			<pre>func FindReceivingChannels(tGeneric <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#LocalType">LocalType</a>) []<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a></pre>
-
-
-
-
-
-
-
-			<h2 id="GenerateProgram">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/makeStubs.go?s=5024:5076#L173">GenerateProgram</a></h2>
-			<pre>func GenerateProgram(t <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#GlobalType">GlobalType</a>) <a href="/pkg/builtin/#string">string</a></pre>
+			<h2 id="FindReceivingChannels">func <a href="/src/GoSesh/mockup/makeStubs.go?s=9493:9587#L332">FindReceivingChannels</a></h2>
+			<pre>func FindReceivingChannels(tGeneric <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#LocalType">LocalType</a>, outMap *map[<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#Channel">Channel</a>]<a href="/pkg/builtin/#bool">bool</a>)</pre>
 			<p>
-Generate the program with all the stubs for a global type
+Given a Local Session type, return a map containing each channel received on in the given type.
+The boolean values in the map are irrelevant, but a map is used to avoid duplicates.
 </p>
 
 
@@ -259,8 +251,11 @@ Generate the program with all the stubs for a global type
 
 
 
-			<h2 id="Link">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=6550:6598#L209">Link</a></h2>
+			<h2 id="Link">func <a href="/src/GoSesh/mockup/mockup.go?s=7092:7140#L211">Link</a></h2>
 			<pre>func Link(events ...<a href="#Event">Event</a>) <a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/">multiparty</a>.<a href="/pkg/github.com/JoeyEremondi/GoSesh/multiparty/#GlobalType">GlobalType</a></pre>
+			<p>
+Sequence the given events, and turn them into a global session type
+</p>
 
 
 
@@ -269,14 +264,15 @@ Generate the program with all the stubs for a global type
 
 
 
-			<h2 id="Channel">type <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=447:530#L7">Channel</a></h2>
+			<h2 id="Channel">type <a href="/src/GoSesh/mockup/mockup.go?s=581:664#L9">Channel</a></h2>
 			<pre>type Channel struct {
     Name        <a href="/pkg/builtin/#string">string</a>
     Source      <a href="/pkg/builtin/#string">string</a>
     Destination <a href="/pkg/builtin/#string">string</a>
 }</pre>
 			<p>
-Channel :  a connection between two endpoints
+A connection between two endpoints.
+The Name field should be the receiving ip:port string.
 </p>
 
 
@@ -294,12 +290,23 @@ Channel :  a connection between two endpoints
 
 
 
-			<h2 id="Event">type <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=764:1027#L21">Event</a></h2>
+			<h2 id="Event">type <a href="/src/GoSesh/mockup/mockup.go?s=969:1232#L23">Event</a></h2>
 			<pre>type Event struct {
     <span class="comment">// contains filtered or unexported fields</span>
 }</pre>
 			<p>
-Event : Wraps a value type
+An abstraction of an interaction that can occur between some parties.
+A mockup is made up of a number of events, run in sequence.
+</p>
+
+
+
+
+
+				<pre>var <span id="DoNothing">DoNothing</span> <a href="#Event">Event</a> = internalDoNothing()</pre>
+				<p>
+Empty event, useful for empty branches
+Just does whatever comes next
 </p>
 
 
@@ -310,10 +317,7 @@ Event : Wraps a value type
 
 
 
-
-
-
-				<h3 id="Break">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=4067:4085#L126">Break</a></h3>
+				<h3 id="Break">func <a href="/src/GoSesh/mockup/mockup.go?s=4619:4637#L133">Break</a></h3>
 				<pre>func Break() <a href="#Event">Event</a></pre>
 				<p>
 Break from the current innermost loop
@@ -323,7 +327,7 @@ Break from the current innermost loop
 
 
 
-				<h3 id="Continue">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=4317:4350#L135">Continue</a></h3>
+				<h3 id="Continue">func <a href="/src/GoSesh/mockup/mockup.go?s=4869:4902#L142">Continue</a></h3>
 				<pre>func Continue(label <a href="/pkg/builtin/#string">string</a>) <a href="#Event">Event</a></pre>
 				<p>
 Jump back to the start of the loop with the given name
@@ -333,39 +337,40 @@ Jump back to the start of the loop with the given name
 
 
 
-				<h3 id="Loop">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=3643:3693#L114">Loop</a></h3>
+				<h3 id="Loop">func <a href="/src/GoSesh/mockup/mockup.go?s=4195:4245#L121">Loop</a></h3>
 				<pre>func Loop(label <a href="/pkg/builtin/#string">string</a>, bodyEvents ...<a href="#Event">Event</a>) <a href="#Event">Event</a></pre>
 				<p>
-Create a named loop, that we can control using Continue() and Break()
-Note that all branches have an implicit Break() if Continue() is not specified
+Create a named loop, that we can control using Continue() and Break().
+Note that all branches have an implicit Break() if Continue() is not specified.
 </p>
 
 
 
 
 
-				<h3 id="Parallel">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=4687:4723#L148">Parallel</a></h3>
+				<h3 id="Parallel">func <a href="/src/GoSesh/mockup/mockup.go?s=5338:5374#L156">Parallel</a></h3>
 				<pre>func Parallel(events ...<a href="#Event">Event</a>) <a href="#Event">Event</a></pre>
 				<p>
-Run the given events in parallel
-TODO don&#39;t attach doNext to a branch?
+Create an event corresponding to the given events running in parallel.
+Because we don&#39;t know when a parallel block finished, no events may
+come after a parallel block.
 </p>
 
 
 
 
 
-				<h3 id="Send">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=2399:2456#L77">Send</a></h3>
+				<h3 id="Send">func <a href="/src/GoSesh/mockup/mockup.go?s=2811:2868#L82">Send</a></h3>
 				<pre>func Send(channel <a href="#Channel">Channel</a>, messageType <a href="#MessageType">MessageType</a>) <a href="#Event">Event</a></pre>
 				<p>
-Send : wrap a Global Type into an Event for send channel
+Send a value of the given type along the given channel.
 </p>
 
 
 
 
 
-				<h3 id="Sequence">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=5214:5250#L165">Sequence</a></h3>
+				<h3 id="Sequence">func <a href="/src/GoSesh/mockup/mockup.go?s=5998:6034#L178">Sequence</a></h3>
 				<pre>func Sequence(events ...<a href="#Event">Event</a>) <a href="#Event">Event</a></pre>
 				<p>
 Sequence a bunch of events into a single event
@@ -376,8 +381,12 @@ This is mostly useful for putting them inside a Parallel block
 
 
 
-				<h3 id="Switch">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=2771:2829#L94">Switch</a></h3>
+				<h3 id="Switch">func <a href="/src/GoSesh/mockup/mockup.go?s=3321:3379#L101">Switch</a></h3>
 				<pre>func Switch(channel <a href="#Channel">Channel</a>, branches ...<a href="#SwitchCase">SwitchCase</a>) <a href="#Event">Event</a></pre>
+				<p>
+Create an event which performs sends a label on the given channel,
+then performs the events in the case for whichever label was sent.
+</p>
 
 
 
@@ -387,14 +396,13 @@ This is mostly useful for putting them inside a Parallel block
 
 
 
-			<h2 id="MessageType">type <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=638:732#L15">MessageType</a></h2>
+			<h2 id="MessageType">type <a href="/src/GoSesh/mockup/mockup.go?s=739:833#L16">MessageType</a></h2>
 			<pre>type MessageType struct {
     <span class="comment">// In the Session Type theory, this is called a Sort</span>
     Type <a href="/pkg/builtin/#string">string</a>
 }</pre>
 			<p>
-MessageType : send a message of this type on a channel
-TODO custom struct message types for app dev
+Wraps the (string representing) the Go type of the message being sent.
 </p>
 
 
@@ -412,7 +420,7 @@ TODO custom struct message types for app dev
 
 
 
-			<h2 id="SwitchCase">type <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=1084:1141#L29">SwitchCase</a></h2>
+			<h2 id="SwitchCase">type <a href="/src/GoSesh/mockup/mockup.go?s=1289:1346#L31">SwitchCase</a></h2>
 			<pre>type SwitchCase struct {
     <span class="comment">// contains filtered or unexported fields</span>
 }</pre>
@@ -431,8 +439,11 @@ Use these to make the branches of a Switch statement
 
 
 
-				<h3 id="Case">func <a href="/src/github.com/JoeyEremondi/GoSesh/mockup/mockup.go?s=1143:1194#L34">Case</a></h3>
+				<h3 id="Case">func <a href="/src/GoSesh/mockup/mockup.go?s=1418:1469#L37">Case</a></h3>
 				<pre>func Case(label <a href="/pkg/builtin/#string">string</a>, thenDo ...<a href="#Event">Event</a>) <a href="#SwitchCase">SwitchCase</a></pre>
+				<p>
+Used to make the case for the given label inside of a Switch block.
+</p>
 
 
 
