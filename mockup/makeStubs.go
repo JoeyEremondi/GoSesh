@@ -209,43 +209,10 @@ if argsWithoutProg[0] == "--%s"{
 		}
 		participantFunctions += fmt.Sprintf(`
 func %s_main(args []string){
-	localType, err := topGlobalType.Project("%s")
-	if err != nil {
-		panic(err)
-	}
-	allRecvChannels := mockup.FindReceivingChannels(localType)
-	if len(allRecvChannels) == 0{
-		//TODO is this bad?
-		panic("This party never does a receive! We have no IP address.")
-	}
-	connMap := make(map[multiparty.Channel]*net.UDPConn)
-
-	firstChan := allRecvChannels[0]
-	conn := ConnectNode(string(firstChan))
-	connMap[firstChan] = conn
-
-	for _,ch := range allRecvChannels[1:]{
-		connMap[ch] = ConnectNode(string(ch))
-	}
-
-	checker := dynamic.CreateChecker("%s", localType)
-	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
-	addrMaker := func(p multiparty.Channel)*net.UDPAddr{
-		addr, ok := addrMap[p]
-		if ok && addr != nil {
-			return addr
-		} else {
-			addr, _ := net.ResolveUDPAddr("udp", string(p))
-			//TODO check err
-			addrMap[p] = addr
-			return addr
-		}
-	}
-	readFun := makeChannelReader(&connMap)
-	writeFun := makeChannelWriter(conn, &addrMap)
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("%s")
 	%s
 }
-			`, part, part, part, stub(ourProjection))
+			`, part, part, stub(ourProjection))
 	}
 	return fmt.Sprintf(`
 var topGlobalType multiparty.GlobalType
@@ -276,6 +243,48 @@ func ConnectNode(laddress string) *net.UDPConn {
 	conn.SetReadBuffer(BUFFERSIZE)
 
 	return conn
+}
+
+func makeCheckerReaderWriter(part string) (dynamic.Checker,
+	func(multiparty.Channel) *net.UDPAddr,
+	func(multiparty.Channel, []byte) (int, *net.UDPAddr, error),
+	func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)) {
+
+	localType, err := topGlobalType.Project(multiparty.Participant(part))
+	if err != nil {
+		panic(err)
+	}
+	allRecvChannels := mockup.FindReceivingChannels(localType)
+	if len(allRecvChannels) == 0{
+		//TODO is this bad?
+		panic("This party never does a receive! We have no IP address.")
+	}
+	connMap := make(map[multiparty.Channel]*net.UDPConn)
+
+	firstChan := allRecvChannels[0]
+	conn := ConnectNode(string(firstChan))
+	connMap[firstChan] = conn
+
+	for _,ch := range allRecvChannels[1:]{
+		connMap[ch] = ConnectNode(string(ch))
+	}
+
+	checker := dynamic.CreateChecker(part, localType)
+	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
+	addrMaker := func(p multiparty.Channel)*net.UDPAddr{
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", string(p))
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(&connMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
+	return checker, readFun, writeFun
 }
 
 
