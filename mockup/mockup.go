@@ -1,9 +1,9 @@
-/* GoSesh Mockup is a set of wrapper structs and functions for the application
-* developer to mockup a multiparty interaction.
-* The developer uses the mockup functions to create a protocol for their programs,
-* by calling the functions here. These functions create a stub Go file which convert the developer's mockup
-* into Global Types that can be used by the dynamic Session Type checker.
- */
+// GoSesh Mockup is a set of wrapper structs and functions for the application
+// developer to mockup a multiparty interaction.
+// The developer uses the mockup functions to create a protocol for their programs,
+// by calling the functions here. These functions create a stub Go file which convert the developer's mockup
+// into Global Types that can be used by the dynamic Session Type checker.
+//
 
 package mockup
 
@@ -48,11 +48,12 @@ func Case(label string, thenDo ...Event) SwitchCase {
 	return SwitchCase{label: label, thenDo: thenDo}
 }
 
-/* Pass in the path to the file containing this mockup, the file name to generate,
+/*
+* Pass in the path to the file containing this mockup, the file name to generate,
 * and a list of events forming a mockup.
 * This will create a .go.stub file with the same contents (type definitions)
-as the input file, with the boilerplate code for a program performing the given events.
-*/
+* as the input file, with the boilerplate code for a program performing the given events.
+ */
 func CreateStubProgram(infile string, outfile string, events ...Event) {
 	root := Link(events...)
 

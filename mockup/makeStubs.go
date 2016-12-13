@@ -1,3 +1,10 @@
+// GoSesh Mockup is a set of wrapper structs and functions for the application
+// developer to mockup a multiparty interaction.
+// The developer uses the mockup functions to create a protocol for their programs,
+// by calling the functions here. These functions create a stub Go file which convert the developer's mockup
+// into Global Types that can be used by the dynamic Session Type checker.
+//
+
 package mockup
 
 import (
