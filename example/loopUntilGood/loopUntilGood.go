@@ -15,7 +15,7 @@ func main() {
 		Source:      "B",
 		Destination: "A"}
 
-	mockup.CreateStubProgram("loopUntilGood.go", "gen/loopUntilGoodPgm",
+	mockup.CreateStubProgram("loopUntilGood.go", "loopUntilGoodPgm",
 		mockup.Loop("testLoop",
 			mockup.Send(channelAToB, mockup.MessageType{Type: "int"}),
 			mockup.Switch(channelBToA,
