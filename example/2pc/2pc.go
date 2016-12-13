@@ -1,3 +1,10 @@
+/**
+An example mockup for a simple 3-party 2-phase commit.
+Running this file generates a stub for the given interaction.
+
+In the /gen folder are many files with deliberate errors, which serve as tests
+for the dynamic chekcing functions.
+*/
 package main
 
 import "github.com/JoeyEremondi/GoSesh/mockup"

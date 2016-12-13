@@ -15,7 +15,7 @@ import (
 )
 
 // A connection between two endpoints.
-// The Source field should be an ip:port string.
+// The Name field should be the receiving ip:port string.
 type Channel struct {
 	Name        string
 	Source      string

@@ -1,3 +1,7 @@
+/**
+An example mockup for a 2-party interaction which loops,
+with A sending an integer to B until B gives back a label accepting the integer.
+*/
 package main
 
 import "github.com/JoeyEremondi/GoSesh/mockup"
