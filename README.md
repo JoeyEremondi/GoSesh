@@ -1,6 +1,6 @@
 # GoSesh
 
-The aim of this project is to help increase knowledge about session types from the *Multiparty asynchronous session types* paper at POPL 2008 (Honda et al. 2008). GoSesh provides an accessible way for developers to increase safety in their distributed systems code using session types and dynamic type checking. Our implementation provides a mockup DSL to model simple session types. While the model is still fairly limited, it provides a solid foundation for more complex session types to be implemented. 
+The aim of this project is to help increase knowledge about session types from the *Multiparty asynchronous session types* paper at POPL 2008 (Honda et al. 2008). GoSesh provides an accessible way for programmers to increase safety in their distributed systems code using session types and dynamic type checking. Our implementation provides a mockup DSL to model simple session types. While the model is still fairly limited, it provides a solid foundation for more complex session types to be implemented. 
 
 ## dynamic
 
