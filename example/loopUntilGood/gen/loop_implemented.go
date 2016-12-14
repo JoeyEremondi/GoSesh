@@ -1,0 +1,217 @@
+package main
+
+import (
+	"fmt"
+	"net"
+	"os"
+
+	"github.com/JoeyEremondi/GoSesh/dynamic"
+	"github.com/JoeyEremondi/GoSesh/mockup"
+	"github.com/JoeyEremondi/GoSesh/multiparty"
+)
+
+func makeGlobalType() {
+
+	channelAToB := mockup.Channel{
+		Name:        "127.0.0.1:24602",
+		Source:      "A",
+		Destination: "B"}
+
+	channelBToA := mockup.Channel{
+		Name:        "127.0.0.1:24601",
+		Source:      "B",
+		Destination: "A"}
+
+	setGlobalType(
+		mockup.Loop("testLoop",
+			mockup.Send(channelAToB, mockup.MessageType{Type: "int"}),
+			mockup.Switch(channelBToA,
+				mockup.Case("intIsBad",
+					mockup.Continue("testLoop"),
+				),
+				mockup.Case("intIsGood",
+					mockup.Break(),
+				),
+			),
+		),
+	)
+}
+
+var topGlobalType multiparty.GlobalType
+
+func setGlobalType(events ...mockup.Event) {
+	topGlobalType = mockup.Link(events...)
+}
+
+func handleError(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+var PROTOCOL string = "udp"
+var BUFFERSIZE int = 1000000
+
+// calls this function to set it up
+// ConnectNode : Set up a connection for a node
+func ConnectNode(laddress string) *net.UDPConn {
+	laddressUDP, addrError := net.ResolveUDPAddr(PROTOCOL, laddress)
+	handleError(addrError)
+
+	conn, connError := net.ListenUDP(PROTOCOL, laddressUDP)
+	handleError(connError)
+	conn.SetReadBuffer(BUFFERSIZE)
+
+	return conn
+}
+
+func makeCheckerReaderWriter(part string) (dynamic.Checker,
+	func(multiparty.Channel) *net.UDPAddr,
+	func(multiparty.Channel, []byte) (int, *net.UDPAddr, error),
+	func(multiparty.Channel, []byte, *net.UDPAddr) (int, error)) {
+
+	localType, err := topGlobalType.Project(multiparty.Participant(part))
+	if err != nil {
+		panic(err)
+	}
+	allRecvChannels := make(map[multiparty.Channel]bool)
+	mockup.FindReceivingChannels(localType, &allRecvChannels)
+
+	connMap := make(map[multiparty.Channel]*net.UDPConn)
+
+	var firstChan multiparty.Channel
+	var conn *net.UDPConn
+	areFirst := true
+
+	for ch, _ := range allRecvChannels {
+		if areFirst {
+			areFirst = false
+			firstChan = ch
+			conn = ConnectNode(string(firstChan))
+			connMap[ch] = conn
+		} else {
+			connMap[ch] = ConnectNode(string(ch))
+		}
+	}
+
+	checker := dynamic.CreateChecker(part, localType)
+	addrMap := make(map[multiparty.Channel]*net.UDPAddr)
+	addrMaker := func(p multiparty.Channel) *net.UDPAddr {
+		addr, ok := addrMap[p]
+		if ok && addr != nil {
+			return addr
+		} else {
+			addr, _ := net.ResolveUDPAddr("udp", string(p))
+			//TODO check err
+			addrMap[p] = addr
+			return addr
+		}
+	}
+	readFun := makeChannelReader(&connMap)
+	writeFun := makeChannelWriter(conn, &addrMap)
+	return checker, addrMaker, readFun, writeFun
+}
+
+//Higher order function: takes in a (possibly empty) map of addresses for channels
+//Then returns the function which looks up the address for that channel (if it exists)
+//And does the write
+func makeChannelWriter(conn *net.UDPConn, addrMap *map[multiparty.Channel]*net.UDPAddr) func(multiparty.Channel, []byte, *net.UDPAddr) (int, error) {
+	return func(p multiparty.Channel, b []byte, addr *net.UDPAddr) (int, error) {
+		//TODO get addr from map!
+		return conn.WriteToUDP(b, addr)
+	}
+}
+
+func makeChannelReader(channelMap *map[multiparty.Channel]*net.UDPConn) func(multiparty.Channel, []byte) (int, *net.UDPAddr, error) {
+	return func(ch multiparty.Channel, b []byte) (int, *net.UDPAddr, error) {
+		return (*channelMap)[ch].ReadFromUDP(b)
+	}
+}
+
+func main() {
+	makeGlobalType()
+
+	argsWithoutProg := os.Args[1:]
+
+	if len(argsWithoutProg) < 1 {
+		panic("Need to give an argument for which node to run!")
+	}
+
+	if argsWithoutProg[0] == "--A" {
+		A_main(argsWithoutProg[1:])
+		return
+	}
+
+	if argsWithoutProg[0] == "--B" {
+		B_main(argsWithoutProg[1:])
+		return
+	}
+
+	panic(fmt.Sprintf("Invalid node argument %s provided", argsWithoutProg[0]))
+}
+
+func A_main(args []string) {
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("A")
+	i := 1
+testLoop:
+	for {
+		println("In loop")
+		if true {
+			sendBuf := checker.PrepareSend(fmt.Sprintf("Trying integer %d", i), i)
+			checker.WriteToUDP("127.0.0.1:24602", writeFun, sendBuf, addrMaker)
+		}
+
+		if true {
+			ourBuf := make([]byte, 1024)
+			checker.ReadFromUDP("127.0.0.1:24601", readFun, ourBuf)
+			var receivedLabel string
+			checker.UnpackReceive("Got response", ourBuf, &receivedLabel)
+			switch receivedLabel {
+
+			case "intIsBad":
+				i++
+				continue testLoop
+
+			case "intIsGood":
+				return
+
+			default:
+				panic("Invalid label sent at selection choice")
+			}
+		}
+
+	}
+
+}
+
+func B_main(args []string) {
+	checker, addrMaker, readFun, writeFun := makeCheckerReaderWriter("B")
+
+testLoop:
+	for {
+		println("In loop")
+		recvBuf := make([]byte, 1024)
+		checker.ReadFromUDP("127.0.0.1:24602", readFun, recvBuf)
+		var receivedValue int
+		checker.UnpackReceive("Got integer from A", recvBuf, &receivedValue)
+
+		var labelToSend = "intIsBad"
+		if (receivedValue % 7) == 0 {
+			labelToSend = "intIsGood"
+		}
+		buf := checker.PrepareSend(fmt.Sprintf("Responding with %s for %d, since it's not 0 mod 7", labelToSend, receivedValue), labelToSend)
+		checker.WriteToUDP("127.0.0.1:24601", writeFun, buf, addrMaker)
+		switch labelToSend {
+
+		case "intIsBad":
+			continue testLoop
+
+		case "intIsGood":
+			return
+
+		default:
+			panic("Invalid label sent at selection choice")
+		}
+
+	}
+}

@@ -1,0 +1,63 @@
+(?<host>\S*) (?<clock>{.*})\n(?<event>.*)
+
+
+754634000 {"754634000":1}
+Initialization Complete
+754634000 {"754634000":2}
+Sending from 754634000
+754634000 {"754634000":3, "756634900":3}
+Received on 754634000
+754634000 {"754634000":4, "756634900":3}
+Sending from 754634000
+754634000 {"754634000":5, "756634900":3, "762639500":3}
+Received on 754634000
+754634000 {"754634000":6, "756634900":3, "762639500":3}
+Sending from 754634000
+754634000 {"754634000":7, "756634900":3, "762639500":3}
+Sending from 754634000
+756634900 {"756634900":1}
+Initialization Complete
+756634900 {"754634000":2, "756634900":2}
+Received on 756634900
+756634900 {"754634000":2, "756634900":3}
+Sending from 756634900
+756634900 {"754634000":6, "756634900":4, "762639500":3}
+Received on 756634900
+762639500 {"762639500":1}
+Initialization Complete
+762639500 {"754634000":4, "756634900":3, "762639500":2}
+Received on 762639500
+762639500 {"754634000":4, "756634900":3, "762639500":3}
+Sending from 762639500
+762639500 {"754634000":7, "756634900":3, "762639500":4}
+Received on 762639500
+A {"A":1}
+Initialization Complete
+A {"A":2}
+Sending B Commit Req
+A {"A":3, "B":3}
+Unpacking B response
+A {"A":4, "B":3}
+Telling C to Start Commit
+A {"A":5, "B":3, "C":3}
+Unpacking Response from C
+A {"A":6, "B":3, "C":3}
+Telling B to Abort
+A {"A":7, "B":3, "C":3}
+Telling C to Abort
+B {"B":1}
+Initialization Complete
+B {"A":2, "B":2}
+Got message from A requesting Commit Phase 1
+B {"A":2, "B":3}
+Telling A if we Commit: B-Commit
+B {"A":6, "B":4, "C":3}
+Unpacked A's final answer
+C {"C":1}
+Initialization Complete
+C {"A":4, "B":3, "C":2}
+Got message from A requesting Commit Phase 1
+C {"A":4, "B":3, "C":3}
+Telling A if we Commit: C-Fail
+C {"A":7, "B":3, "C":4}
+Unpacked A's final answer

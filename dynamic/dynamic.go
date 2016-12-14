@@ -233,7 +233,7 @@ func (checker *Checker) PrepareSend(msg string, buf interface{}) []byte {
 		panic("Tried to do receive on send type")
 
 	default:
-		panic(fmt.Sprintf("Unknown type in PrepareSend %s", t))
+		panic(fmt.Sprintf("Unknown type in PrepareSend %T", t))
 	}
 
 	return gvBuffer

@@ -843,8 +843,9 @@ func (t LocalRecursiveType) UnfoldOneLevel() LocalType {
 func (t LocalRecursiveType) Substitute(u LocalNameType, tsub LocalType) LocalType {
 	//Don't substitute if we're shadowing
 	if u == t.Bind {
-		return u
+		return t
 	} else {
+		println("SUBBING IN REC")
 		ret := t
 		ret.Body = t.Body.Substitute(u, tsub)
 		return ret

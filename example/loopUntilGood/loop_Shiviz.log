@@ -1,0 +1,123 @@
+(?<host>\S*) (?<clock>{.*})\n(?<event>.*)
+
+
+178464800 {"178464800":1}
+Initialization Complete
+178464800 {"178464800":2}
+Sending from 178464800
+178464800 {"178464800":3, "180466600":3}
+Received on 178464800
+178464800 {"178464800":4, "180466600":3}
+Sending from 178464800
+178464800 {"178464800":5, "180466600":5}
+Received on 178464800
+178464800 {"178464800":6, "180466600":5}
+Sending from 178464800
+178464800 {"178464800":7, "180466600":7}
+Received on 178464800
+178464800 {"178464800":8, "180466600":7}
+Sending from 178464800
+178464800 {"178464800":9, "180466600":9}
+Received on 178464800
+178464800 {"178464800":10, "180466600":9}
+Sending from 178464800
+178464800 {"178464800":11, "180466600":11}
+Received on 178464800
+178464800 {"178464800":12, "180466600":11}
+Sending from 178464800
+178464800 {"178464800":13, "180466600":13}
+Received on 178464800
+178464800 {"178464800":14, "180466600":13}
+Sending from 178464800
+178464800 {"178464800":15, "180466600":15}
+Received on 178464800
+180466600 {"180466600":1}
+Initialization Complete
+180466600 {"178464800":2, "180466600":2}
+Received on 180466600
+180466600 {"178464800":2, "180466600":3}
+Sending from 180466600
+180466600 {"178464800":4, "180466600":4}
+Received on 180466600
+180466600 {"178464800":4, "180466600":5}
+Sending from 180466600
+180466600 {"178464800":6, "180466600":6}
+Received on 180466600
+180466600 {"178464800":6, "180466600":7}
+Sending from 180466600
+180466600 {"178464800":8, "180466600":8}
+Received on 180466600
+180466600 {"178464800":8, "180466600":9}
+Sending from 180466600
+180466600 {"178464800":10, "180466600":10}
+Received on 180466600
+180466600 {"178464800":10, "180466600":11}
+Sending from 180466600
+180466600 {"178464800":12, "180466600":12}
+Received on 180466600
+180466600 {"178464800":12, "180466600":13}
+Sending from 180466600
+180466600 {"178464800":14, "180466600":14}
+Received on 180466600
+180466600 {"178464800":14, "180466600":15}
+Sending from 180466600
+A {"A":1}
+Initialization Complete
+A {"A":2}
+Trying integer 1
+A {"A":3, "B":3}
+Got response
+A {"A":4, "B":3}
+Trying integer 2
+A {"A":5, "B":5}
+Got response
+A {"A":6, "B":5}
+Trying integer 3
+A {"A":7, "B":7}
+Got response
+A {"A":8, "B":7}
+Trying integer 4
+A {"A":9, "B":9}
+Got response
+A {"A":10, "B":9}
+Trying integer 5
+A {"A":11, "B":11}
+Got response
+A {"A":12, "B":11}
+Trying integer 6
+A {"A":13, "B":13}
+Got response
+A {"A":14, "B":13}
+Trying integer 7
+A {"A":15, "B":15}
+Got response
+B {"B":1}
+Initialization Complete
+B {"A":2, "B":2}
+Got integer from A
+B {"A":2, "B":3}
+Responding with intIsBad for 1, since it's not 0 mod 7
+B {"A":4, "B":4}
+Got integer from A
+B {"A":4, "B":5}
+Responding with intIsBad for 2, since it's not 0 mod 7
+B {"A":6, "B":6}
+Got integer from A
+B {"A":6, "B":7}
+Responding with intIsBad for 3, since it's not 0 mod 7
+B {"A":8, "B":8}
+Got integer from A
+B {"A":8, "B":9}
+Responding with intIsBad for 4, since it's not 0 mod 7
+B {"A":10, "B":10}
+Got integer from A
+B {"A":10, "B":11}
+Responding with intIsBad for 5, since it's not 0 mod 7
+B {"A":12, "B":12}
+Got integer from A
+B {"A":12, "B":13}
+Responding with intIsBad for 6, since it's not 0 mod 7
+B {"A":14, "B":14}
+Got integer from A
+B {"A":14, "B":15}
+Responding with intIsGood for 7, since it's not 0 mod 7

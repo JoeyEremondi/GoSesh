@@ -271,7 +271,7 @@ func B_main(args []string) {
 		labelToSend = "B-Commit"
 	}
 
-	labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
+	labelBuf := checker.PrepareSend("Telling A if we Commit: "+labelToSend, labelToSend)
 	checker.WriteToUDP("127.0.0.1:24601", writeFun, labelBuf, addrMaker)
 
 	shouldCommitBuf := make([]byte, 1024)
@@ -302,7 +302,7 @@ func C_main(args []string) {
 		labelToSend = "C-Commit"
 	}
 
-	labelBuf := checker.PrepareSend("Telling A if we Commit", labelToSend)
+	labelBuf := checker.PrepareSend("Telling A if we Commit: "+labelToSend, labelToSend)
 	checker.WriteToUDP("127.0.0.1:24601", writeFun, labelBuf, addrMaker)
 
 	shouldCommitBuf := make([]byte, 1024)

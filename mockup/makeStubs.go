@@ -290,8 +290,10 @@ func makeCheckerReaderWriter(part string) (dynamic.Checker,
 				areFirst = false
 				firstChan = ch
 				conn = ConnectNode(string(firstChan))
-			}
+				connMap[ch] = conn
+			} else {
 			connMap[ch] = ConnectNode(string(ch))
+		}
 		}
 
 	checker := dynamic.CreateChecker(part, localType)
