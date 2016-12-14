@@ -204,17 +204,17 @@ checker.UnpackReceive("TODO unpack message", recvBuf, &receivedValue)
 	}
 	
 	if true{
-		var labelToSend = "intIsBad" //TODO which label to send
+		var labelToSend = "intIsGood" //TODO which label to send
 		buf := checker.PrepareSend("TODO Select message", labelToSend)
 		checker.WriteToUDP("127.0.0.1:24601", writeFun, buf, addrMaker)
 		switch labelToSend{
 			
-	case "intIsBad":
-		continue testLoop
-
-			
 	case "intIsGood":
 		return
+
+			
+	case "intIsBad":
+		continue testLoop
 
 			
 		default:
